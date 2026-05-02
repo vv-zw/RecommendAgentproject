@@ -99,14 +99,27 @@ try:
         smart_search,
     )
     from watchlist.manager import manage_watchlist
-    # AI Recommendation Pipeline Imports
+
+    # --- AI Recommendation Pipeline Imports ---
+    # Phase 1: Agent
     from agent.recommendation_agent import RecommendationAgent
+    # Phase 3: Orchestrator & Components
     from orchestrator.recommendation_orchestrator import RecommendationOrchestrator
-    from orchestrator.explanation_generator import generate_explanation
+    from orchestrator.fusion import get_fusion_weights # Import specific function
+    # Phase 5: Engineering & Explainability Layer
+    from config import settings
+    from logging.logger import logger # Use the pre-configured logger instance
+    from explain.explanation_generator import generate_per_item_explanations
+    from debug.debug_builder import build_debug_trace
 
     print("[OK] 成功加载所有模块")
 except ImportError as e:
-    print(f"[WARN] 部分模块导入失败: {e}")
+    # Use logger if available, otherwise print
+    try:
+        from logging.logger import logger
+        logger.error(f"[FATAL] 模块导入失败: {e}")
+    except ImportError:
+        print(f"[FATAL] 模块导入失败: {e}")
 
 
     # 创建占位函数避免崩溃
@@ -1009,51 +1022,57 @@ app.view_functions['refresh_recommendations'] = refresh_recommendations_v2
 @app.route("/api/ai/recommend/full", methods=["POST"])
 def full_ai_recommend():
     """The main endpoint for the entire AI recommendation pipeline."""
+    request_id = uuid.uuid4().hex[:8]
     try:
         data = request.get_json() or {}
         user_id = data.get('user_id', 1) # Default to user 1 for demo
         query = data.get('query', '')
+        logger.info(f"[ReqID: {request_id}] Received AI recommendation request for user_id={user_id}, query='{query}'")
 
         if not query:
+            logger.warning(f"[ReqID: {request_id}] Query is empty.")
             return jsonify({"code": 400, "error": "Query is required"}), 400
 
         # Phase 1: Get decision from Agent
         agent_input = {
             "user_id": user_id,
             "query": query,
-            "context": {
-                "device": "web",
-                "history": [] if user_id != 1 else [123] # Mock history for user 1
-            }
+            "context": {"history": [] if user_id != 1 else [123]}
         }
         agent_decision = agent.decide(agent_input)
+        logger.info(f"[ReqID: {request_id}] Agent decision: {agent_decision['intent']}, strategy: {agent_decision['strategy']}")
 
         # Phase 3: Get final recommendations from Orchestrator
-        orchestrator_input = {
-            "user_id": user_id,
-            "query": query,
-            "agent_decision": agent_decision
-        }
+        orchestrator_input = {"user_id": user_id, "query": query, "agent_decision": agent_decision}
         orchestrator_output = orchestrator.orchestrate(orchestrator_input)
+        recommendations = orchestrator_output.get("recommendations", [])
+        logger.info(f"[ReqID: {request_id}] Orchestrator returned {len(recommendations)} recommendations after fusion and filtering.")
 
-        # Phase 4: Generate human-readable explanation
-        explanation = generate_explanation(agent_decision, orchestrator_output)
+        # Phase 5.1: Generate per-item explanations
+        if settings.EXPLAIN_ENABLED:
+            explanations = generate_per_item_explanations(recommendations)
+            for item in recommendations:
+                item["explanation"] = explanations.get(item["movie_id"], "为您推荐这部优质电影。")
+
+        # Phase 5.2: Build debug trace
+        debug_trace = None
+        if settings.DEBUG_MODE_ENABLED:
+            fusion_weights = get_fusion_weights(agent_decision, query)
+            debug_trace = build_debug_trace(agent_decision, fusion_weights, orchestrator_output.get("raw_results", {}))
+            logger.debug(f"[ReqID: {request_id}] Debug trace generated.")
 
         # Final response for the frontend
         final_response = {
-            "recommendations": orchestrator_output.get("recommendations", []),
-            "explanation": explanation,
-            "debug_trace": {
-                "agent_decision": agent_decision,
-                "orchestrator_trace": orchestrator_output.get("debug_trace", {})
-            }
+            "recommendations": recommendations,
+            "debug_trace": debug_trace
         }
-
+        
+        logger.info(f"[ReqID: {request_id}] Successfully processed request.")
         return jsonify({"code": 0, "data": final_response})
 
     except Exception as e:
-        print(f"AI Recommendation Pipeline failed: {str(e)}")
-        traceback.print_exc()
+        logger.error(f"[ReqID: {request_id}] AI Recommendation Pipeline failed: {str(e)}")
+        logger.error(traceback.format_exc())
         return jsonify({"code": 500, "error": f"Server error: {str(e)}"}), 500
 
 

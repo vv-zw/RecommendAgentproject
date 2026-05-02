@@ -15,10 +15,11 @@ class RecommendationOrchestrator:
     """
     The main orchestrator that schedules and fuses recommendations.
     """
-    def orchestrate(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    def orchestrate(self, request_data: Dict[str, Any], fusion_weights_override: Dict[str, float] = None) -> Dict[str, Any]:
         """
         Takes an agent decision and produces a final recommendation list.
         :param request_data: The input data including user_id, query, and agent_decision.
+        :param fusion_weights_override: Optional weights to override default logic.
         :return: A dictionary with the final recommendation list and debug info.
         """
         user_id = request_data["user_id"]
@@ -27,22 +28,19 @@ class RecommendationOrchestrator:
         strategy = agent_decision.get("strategy", {})
 
         raw_results = {}
-        debug_trace = {}
 
         # Step 1: Call recommendation models based on agent strategy
         if strategy.get("use_ncf", False):
             raw_results["ncf"] = get_ncf_recommendations(user_id)
-            debug_trace["ncf_used"] = True
 
         if strategy.get("use_textcnn", False):
             raw_results["textcnn"] = get_textcnn_recommendations(query)
-            debug_trace["textcnn_used"] = True
 
         if strategy.get("use_rules", False):
             raw_results["rules"] = get_rule_based_recommendations(agent_decision.get("genres", []))
-            debug_trace["rules_used"] = True
 
         # Step 2: Fuse the results from different sources
+        # The fusion function now reads weights from config, so we just pass the decision
         fused_list = fuse_recommendations(raw_results, agent_decision, query)
 
         # Step 3: Filter the results (e.g., remove seen items)
@@ -52,10 +50,8 @@ class RecommendationOrchestrator:
 
         # Step 4: Prepare the final output
         return {
-            "user_id": user_id,
-            "query": query,
             "recommendations": final_list[:10], # Limit to top 10
-            "debug_trace": debug_trace
+            "raw_results": raw_results # Pass raw results for debug trace
         }
 
 def run_tests():

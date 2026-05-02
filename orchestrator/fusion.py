@@ -2,6 +2,7 @@
 from typing import List, Dict, Any
 
 from orchestrator.score_engine import calculate_fused_scores
+from config import settings # Import from the new config file
 
 def get_fusion_weights(agent_decision: Dict[str, Any], query: str) -> Dict[str, float]:
     """
@@ -13,25 +14,13 @@ def get_fusion_weights(agent_decision: Dict[str, Any], query: str) -> Dict[str, 
     strategy = agent_decision.get("strategy", {})
     is_cold_start = not strategy.get("use_ncf", True) # Infer cold start if NCF is disabled
 
-    # Default weights
-    weights = {
-        "ncf": 0.4,
-        "textcnn": 0.3,
-        "rules": 0.3
-    }
-
+    # Load weights from the central config
     if is_cold_start:
-        print("[Fusion] Cold-start detected. Adjusting weights.")
-        weights["ncf"] = 0
-        weights["textcnn"] = 0.5
-        weights["rules"] = 0.5
-    
-    # Check for strong semantic query
+        weights = settings.COLD_START_FUSION_WEIGHTS.copy()
     elif any(k in query for k in ["类似", "相似"]):
-        print("[Fusion] Semantic query detected. Boosting TextCNN weight.")
-        weights["ncf"] = 0.3
-        weights["textcnn"] = 0.5 # Boost TextCNN
-        weights["rules"] = 0.2
+        weights = settings.SEMANTIC_QUERY_FUSION_WEIGHTS.copy()
+    else:
+        weights = settings.DEFAULT_FUSION_WEIGHTS.copy()
 
     # Normalize weights to only include active strategies
     active_weight_sum = sum(weights[source] for source, active in strategy.items() if active and source in weights)

@@ -13,7 +13,7 @@ def calculate_fused_scores(
     :return: A list of movies with their final fused scores.
     """
     fused_scores: Dict[int, float] = {}
-    movie_details: Dict[int, str] = {}
+    movie_details: Dict[int, Dict[str, Any]] = {}
 
     for source, recs in results.items():
         weight = weights.get(source, 0)
@@ -27,17 +27,19 @@ def calculate_fused_scores(
             
             if movie_id not in fused_scores:
                 fused_scores[movie_id] = 0
-                movie_details[movie_id] = title
+                movie_details[movie_id] = {"title": title, "sources": []}
             
             fused_scores[movie_id] += score * weight
+            if source not in movie_details[movie_id]["sources"]:
+                movie_details[movie_id]["sources"].append(source)
 
     # Convert the fused scores back into a list of dictionaries
     final_recommendations = [
         {
             "movie_id": movie_id,
-            "title": movie_details[movie_id],
+            "title": movie_details[movie_id]["title"],
             "score": score,
-            "source": "hybrid"
+            "sources": movie_details[movie_id]["sources"]
         }
         for movie_id, score in fused_scores.items()
     ]
