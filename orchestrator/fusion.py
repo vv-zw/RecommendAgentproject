@@ -2,7 +2,7 @@
 from typing import List, Dict, Any
 
 from orchestrator.score_engine import calculate_fused_scores
-from config import settings # Import from the new config file
+from ai_config import settings # Import from the new config file
 
 def get_fusion_weights(agent_decision: Dict[str, Any], query: str) -> Dict[str, float]:
     """
@@ -23,13 +23,19 @@ def get_fusion_weights(agent_decision: Dict[str, Any], query: str) -> Dict[str, 
         weights = settings.DEFAULT_FUSION_WEIGHTS.copy()
 
     # Normalize weights to only include active strategies
-    active_weight_sum = sum(weights[source] for source, active in strategy.items() if active and source in weights)
+    active_strategies = {
+        source.replace("use_", ""): weights[source.replace("use_", "")]
+        for source, active in strategy.items()
+        if active and source.replace("use_", "") in weights
+    }
+
+    total_active_weight = sum(active_strategies.values())
     
     final_weights = {}
-    if active_weight_sum > 0:
-        for source, weight in weights.items():
-            if strategy.get(source, False):
-                final_weights[source] = weight / active_weight_sum # Normalize
+    if total_active_weight > 0:
+        # Normalize the weights of active strategies so they sum to 1
+        for source, weight in active_strategies.items():
+            final_weights[source] = weight / total_active_weight
 
     return final_weights
 

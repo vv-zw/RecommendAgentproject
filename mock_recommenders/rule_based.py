@@ -1,4 +1,4 @@
-# recommendation/rule_based.py (Mock)
+# mock_recommenders/rule_based.py (Mock)
 from typing import List, Dict, Any
 
 def get_rule_based_recommendations(genres: List[str], top_k: int = 10) -> List[Dict[str, Any]]:

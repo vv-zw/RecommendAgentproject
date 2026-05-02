@@ -1,4 +1,4 @@
-# config/settings.py
+# ai_config/settings.py
 
 # --- Feature Flags ---
 # 控制是否开启Debug模式，输出详细的debug_trace
@@ -30,6 +30,14 @@ COLD_START_FUSION_WEIGHTS = {
     "rag": 0.0
 }
 
+# 纯类型查询权重 (例如“喜剧电影”)
+GENRE_QUERY_FUSION_WEIGHTS = {
+    "ncf": 0.1, # 大幅降低个性化权重，避免不相关类型污染
+    "textcnn": 0.5, # 提升内容权重
+    "rules": 0.4, # 提升规则权重
+    "rag": 0.0
+}
+
 # 强语义查询权重 (例如包含“类似”等词语)
 SEMANTIC_QUERY_FUSION_WEIGHTS = {
     "ncf": 0.3,
@@ -37,11 +45,3 @@ SEMANTIC_QUERY_FUSION_WEIGHTS = {
     "rules": 0.2,
     "rag": 0.0
 }
-
-if __name__ == '__main__':
-    print("--- Configuration Settings ---")
-    print(f"Debug Mode: {DEBUG_MODE_ENABLED}")
-    print(f"Explainability: {EXPLAIN_ENABLED}")
-    print("\nDefault Weights:", DEFAULT_FUSION_WEIGHTS)
-    print("Cold Start Weights:", COLD_START_FUSION_WEIGHTS)
-    print("Semantic Query Weights:", SEMANTIC_QUERY_FUSION_WEIGHTS)

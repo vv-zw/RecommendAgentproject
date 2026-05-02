@@ -1,4 +1,4 @@
-# recommendation/ncf.py (Mock)
+# mock_recommenders/ncf.py (Mock)
 from typing import List, Dict, Any
 
 def get_ncf_recommendations(user_id: int, top_k: int = 10) -> List[Dict[str, Any]]:

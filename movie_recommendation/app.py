@@ -9,9 +9,12 @@ from datetime import datetime
 from flask import Flask, jsonify, request, make_response, send_file
 import pandas as pd
 
-PACKAGE_ROOT = os.path.dirname(os.path.abspath(__file__))
-if PACKAGE_ROOT not in sys.path:
-    sys.path.insert(0, PACKAGE_ROOT)
+# This block ensures that top-level packages (agent, orchestrator, etc.) can be found.
+# It adds the project's root directory to the system path.
+PACKAGE_ROOT = os.path.dirname(os.path.abspath(__file__)) # .../movie_recommendation
+PROJECT_ROOT = os.path.dirname(PACKAGE_ROOT) # .../
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 # Force UTF-8 console output on Windows to avoid emoji log crashes under GBK code page.
 try:
@@ -21,6 +24,9 @@ try:
         sys.stderr.reconfigure(encoding="utf-8")
 except Exception:
     pass
+
+# Setup logger first to ensure it's available everywhere
+from app_logger.logger import logger
 
 # imghdr 在 Python 3.13+ 中已移除，使用替代方案
 def detect_image_type(image_data):
@@ -107,19 +113,13 @@ try:
     from orchestrator.recommendation_orchestrator import RecommendationOrchestrator
     from orchestrator.fusion import get_fusion_weights # Import specific function
     # Phase 5: Engineering & Explainability Layer
-    from config import settings
-    from logging.logger import logger # Use the pre-configured logger instance
+    from ai_config import settings
     from explain.explanation_generator import generate_per_item_explanations
     from debug.debug_builder import build_debug_trace
 
     print("[OK] 成功加载所有模块")
 except ImportError as e:
-    # Use logger if available, otherwise print
-    try:
-        from logging.logger import logger
-        logger.error(f"[FATAL] 模块导入失败: {e}")
-    except ImportError:
-        print(f"[FATAL] 模块导入失败: {e}")
+    logger.error(f"[FATAL] 模块导入失败: {e}")
 
 
     # 创建占位函数避免崩溃
@@ -1290,6 +1290,12 @@ def serve_frontend():
 def serve_static_files(filename):
     """Serves static files like CSS and JS."""
     return send_file(os.path.join(os.path.dirname(PACKAGE_ROOT), 'frontend', filename))
+
+
+@app.route('/favicon.ico')
+def favicon():
+    """Handles browser's automatic request for a favicon."""
+    return '', 204 # Return No Content
 
 
 # --------------------------

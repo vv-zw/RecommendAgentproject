@@ -1,4 +1,4 @@
-# logging/logger.py
+# app_logger/logger.py
 import logging
 import os
 import sys
@@ -15,6 +15,7 @@ def setup_logger(log_path="logs/app.log", level="INFO"):
     :param level: The logging level.
     :return: A configured logger instance.
     """
+    # Use a unique name for the logger to avoid conflicts
     logger = logging.getLogger("AIRecommendationApp")
     logger.setLevel(getattr(logging, level.upper(), logging.INFO))
 
@@ -43,16 +44,3 @@ def setup_logger(log_path="logs/app.log", level="INFO"):
 
 # 创建一个默认的logger实例供其他模块直接导入使用
 logger = setup_logger()
-
-if __name__ == '__main__':
-    print("--- Testing logger.py ---")
-    
-    # 获取logger实例
-    test_logger = setup_logger(log_path="logs/test.log", level="DEBUG")
-    
-    test_logger.debug("This is a debug message.")
-    test_logger.info("This is an info message.")
-    test_logger.warning("This is a warning message.")
-    test_logger.error("This is an error message.")
-    
-    print(f"Log messages have been written to logs/test.log and console.")

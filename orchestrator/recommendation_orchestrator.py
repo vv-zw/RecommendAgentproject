@@ -3,9 +3,9 @@ import json
 from typing import Dict, Any
 
 # Mock imports representing the existing recommendation systems
-from recommendation.ncf import get_ncf_recommendations
-from recommendation.textcnn import get_textcnn_recommendations
-from recommendation.rule_based import get_rule_based_recommendations
+from mock_recommenders.ncf import get_ncf_recommendations
+from mock_recommenders.textcnn import get_textcnn_recommendations
+from mock_recommenders.rule_based import get_rule_based_recommendations
 
 # Orchestrator components
 from orchestrator.fusion import fuse_recommendations

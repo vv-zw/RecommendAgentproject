@@ -1,4 +1,4 @@
-# recommendation/textcnn.py (Mock)
+# mock_recommenders/textcnn.py (Mock)
 from typing import List, Dict, Any
 
 def get_textcnn_recommendations(query: str, top_k: int = 10) -> List[Dict[str, Any]]:
