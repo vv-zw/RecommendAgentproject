@@ -1,0 +1,91 @@
+.admin-content-page {
+  min-height: 100vh;
+  background: #f6f1e8;
+  padding: 24rpx;
+}
+
+.toolbar-card,
+.content-card,
+.error-box,
+.loading-box,
+.pager {
+  background: #fffdf8;
+  border-radius: 22rpx;
+  box-shadow: 0 14rpx 36rpx rgba(55, 36, 17, 0.06);
+}
+
+.toolbar-card {
+  padding: 24rpx;
+}
+
+.page-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #24180f;
+  margin-bottom: 18rpx;
+}
+
+.picker-box,
+.search-input {
+  background: #fff;
+  border: 2rpx solid #e6d9c7;
+  border-radius: 16rpx;
+  padding: 18rpx;
+  margin-bottom: 14rpx;
+}
+
+.search-btn {
+  border-radius: 16rpx;
+  background: #c8643b;
+  color: #fff;
+  margin-bottom: 14rpx;
+}
+
+.meta-text,
+.content-meta,
+.content-sub,
+.error-box,
+.loading-box {
+  color: #6c5c4e;
+  font-size: 24rpx;
+}
+
+.list-wrap {
+  margin-top: 20rpx;
+  display: grid;
+  gap: 18rpx;
+}
+
+.content-card {
+  padding: 24rpx;
+}
+
+.content-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #24180f;
+  margin-bottom: 12rpx;
+}
+
+.content-sub {
+  margin-top: 8rpx;
+}
+
+.error-box,
+.loading-box,
+.pager {
+  margin-top: 20rpx;
+  padding: 24rpx;
+}
+
+.pager {
+  display: flex;
+  gap: 16rpx;
+}
+
+.pager-btn {
+  flex: 1;
+  border-radius: 16rpx;
+  background: #23373d;
+  color: #fff;
+}

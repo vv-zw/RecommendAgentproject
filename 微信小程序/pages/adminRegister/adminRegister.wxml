@@ -1,0 +1,35 @@
+<view class="admin-register-page">
+  <view class="hero-card">
+    <view class="hero-mark">MR</view>
+    <view class="hero-copy">
+      <view class="hero-title">创建管理员</view>
+      <view class="hero-subtitle">首次使用时，为后台设置专属账号和密码。</view>
+    </view>
+  </view>
+
+  <view class="form-card">
+    <view class="form-item">
+      <view class="label">管理员账号</view>
+      <input class="input" value="{{username}}" placeholder="请输入管理员账号" bindinput="onUsernameInput" />
+    </view>
+
+    <view class="form-item">
+      <view class="label">显示名称</view>
+      <input class="input" value="{{displayName}}" placeholder="可选，用于后台展示" bindinput="onDisplayNameInput" />
+    </view>
+
+    <view class="form-item">
+      <view class="label">管理员密码</view>
+      <input class="input" password value="{{password}}" placeholder="请输入至少 6 位密码" bindinput="onPasswordInput" />
+    </view>
+
+    <view class="form-item">
+      <view class="label">确认密码</view>
+      <input class="input" password value="{{confirmPassword}}" placeholder="请再次输入密码" bindinput="onConfirmPasswordInput" />
+    </view>
+
+    <view wx:if="{{error}}" class="error-text">{{error}}</view>
+
+    <button class="submit-btn" loading="{{loading}}" bindtap="submitRegister">创建管理员账号</button>
+  </view>
+</view>

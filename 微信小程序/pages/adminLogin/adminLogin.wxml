@@ -1,0 +1,38 @@
+<view class="admin-login-page">
+  <view class="hero-card">
+    <view class="hero-mark">MR</view>
+    <view class="hero-copy">
+      <view class="hero-title">管理员后台</view>
+      <view class="hero-subtitle">统一管理内容、推荐和用户反馈</view>
+    </view>
+  </view>
+
+  <view wx:if="{{bootstrapLoading}}" class="status-card">
+    <view class="status-title">正在检查管理员状态</view>
+    <view class="status-desc">请稍候，我们正在确认后台是否已完成初始化。</view>
+  </view>
+
+  <view wx:elif="{{!hasAdmin}}" class="form-card">
+    <view class="empty-title">还没有管理员账号</view>
+    <view class="empty-desc">{{statusMessage}}</view>
+    <button class="submit-btn" bindtap="goToRegister">去创建管理员账号</button>
+  </view>
+
+  <view wx:else class="form-card">
+    <view class="form-item">
+      <view class="label">账号</view>
+      <input class="input" value="{{username}}" placeholder="请输入管理员账号" bindinput="onUsernameInput" />
+    </view>
+
+    <view class="form-item">
+      <view class="label">密码</view>
+      <input class="input" password value="{{password}}" placeholder="请输入密码" bindinput="onPasswordInput" />
+    </view>
+
+    <view wx:if="{{error}}" class="error-text">{{error}}</view>
+
+    <button class="submit-btn" loading="{{loading}}" bindtap="submitLogin">登录后台</button>
+  </view>
+
+  <view wx:if="{{error && !bootstrapLoading && !hasAdmin}}" class="error-panel">{{error}}</view>
+</view>

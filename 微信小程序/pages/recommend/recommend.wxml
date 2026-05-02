@@ -1,0 +1,15 @@
+<view class="container">
+  <view class="title">选择推荐类型</view>
+  
+  <!-- 电影按钮：点击跳转到电影推荐页 -->
+  <navigator url="/pages/movieRecommend/movieRecommend" class="type-btn movie-btn">
+    <view class="icon">🎬</view>
+    <view class="text">电影推荐</view>
+  </navigator>
+  
+  <!-- 剧集按钮：点击跳转到剧集推荐页 -->
+  <navigator url="/pages/showRecommend/showRecommend" class="type-btn series-btn">
+    <view class="icon">📺</view>
+    <view class="text">剧集推荐</view>
+  </navigator>
+</view>

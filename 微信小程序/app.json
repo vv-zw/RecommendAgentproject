@@ -1,0 +1,42 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/all/all",
+    "pages/movie/movie",
+    "pages/show/show",
+    "pages/already/already",
+    "pages/add/add",
+    "pages/recommend/recommend",
+    "pages/mine/mine",
+    "pages/setting/setting",
+    "pages/movieRecommend/movieRecommend",
+    "pages/showRecommend/showRecommend",
+    "pages/webview/webview",
+    "pages/adminLogin/adminLogin",
+    "pages/adminRegister/adminRegister",
+    "pages/adminDashboard/adminDashboard",
+    "pages/adminContent/adminContent",
+    "pages/adminBehavior/adminBehavior"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "影视推荐小程序",
+    "navigationBarBackgroundColor": "#ffffff"
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "requiredPrivateInfos": [
+    "getLocation"
+  ],
+  "networkTimeout": {
+    "request": 15000
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "你的位置信息将用于推荐附近内容"
+    }
+  },
+  "usingComponents": {}
+}

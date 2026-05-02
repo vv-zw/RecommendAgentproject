@@ -1,0 +1,94 @@
+wxss
+.container {
+  padding: 20rpx;
+}
+
+.page-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  text-align: center;
+  padding: 20rpx 0;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 500rpx;
+}
+
+.loading-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-icon loading {
+  margin-bottom: 10rpx;
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 500rpx;
+}
+
+.error text {
+  font-size: 28rpx;
+  color: #999;
+  margin-bottom: 20rpx;
+}
+
+.retry-btn {
+  padding: 10rpx 40rpx;
+  background-color: #07c160;
+  color: white;
+  border-radius: 8rpx;
+}
+
+.movie-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.movie-item {
+  width: 48%;
+  margin-bottom: 20rpx;
+}
+
+.movie-cover-container {
+  position: relative;
+  width: 100%;
+  height: 400rpx;
+  overflow: hidden;
+  border-radius: 8rpx;
+}
+
+.movie-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.movie-rate {
+  position: absolute;
+  top: 10rpx;
+  right: 10rpx;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #FFD700;
+  font-size: 24rpx;
+  padding: 4rpx 8rpx;
+  border-radius: 4rpx;
+}
+
+.movie-title {
+  font-size: 28rpx;
+  margin-top: 10rpx;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

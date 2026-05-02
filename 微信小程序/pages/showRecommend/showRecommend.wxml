@@ -1,0 +1,97 @@
+<view class="container">
+  <view class="nav-bar">
+    <text class="page-title">剧集推荐</text>
+    <button class="refresh-btn" bindtap="refreshRecommendations" wx:if="{{activeTab === 'recommend'}}">
+      <text class="sync-status">{{syncStatus || '刷新'}}</text>
+    </button>
+  </view>
+
+  <view class="tab-bar">
+    <view class="tab-item {{activeTab === 'recommend' ? 'active' : ''}}" data-tab="recommend" bindtap="switchTab">推荐</view>
+    <view class="tab-item {{activeTab === 'search' ? 'active' : ''}}" data-tab="search" bindtap="switchTab">搜索</view>
+    <view class="tab-item {{activeTab === 'watchlist' ? 'active' : ''}}" data-tab="watchlist" bindtap="switchTab">待看清单</view>
+  </view>
+
+  <view class="page-content" wx:if="{{activeTab === 'recommend'}}">
+    <view class="loading-container" wx:if="{{loading}}">
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view class="error-container" wx:if="{{error}}">
+      <text class="error-text">{{error}}</text>
+      <button class="retry-btn" bindtap="fetchRecommendations">重试</button>
+    </view>
+
+    <view class="reason-container" wx:if="{{recommendReasons.length > 0 && !loading && !error}}">
+      <text class="reason-title">为你推荐的理由：</text>
+      <view class="tags-container">
+        <text class="tag-item reason-item" wx:for="{{recommendReasons}}" wx:for-item="reason" wx:key="index">
+          {{reason}}
+        </text>
+      </view>
+    </view>
+
+    <view class="grid-container" wx:if="{{gridList.length > 0 && !loading && !error}}">
+      <view class="grid-row" wx:for="{{gridList}}" wx:for-item="row" wx:key="index">
+        <view class="grid-item" wx:for="{{row}}" wx:for-item="series" wx:key="id">
+          <image class="poster-img" src="{{series.cover_url}}" mode="aspectFill" binderror="onImageError" data-id="{{series.id}}" bindtap="goToDetail"></image>
+          <text class="movie-title">{{series.title}}</text>
+          <text class="movie-rating">评分：{{series.rating}}</text>
+          <text class="movie-genres">{{series.genresText}}</text>
+          <text class="movie-match">匹配度：{{series.recommendMatchScore}}</text>
+          <view class="action-buttons">
+            <button class="action-btn watch-btn" bindtap="addToWatchlist" data-id="{{series.id}}">想看</button>
+            <button class="action-btn dislike-btn" bindtap="handleNegativeFeedback" data-id="{{series.id}}">不感兴趣</button>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-container" wx:if="{{!loading && !error && gridList.length === 0}}">
+      <text class="empty-text">暂无推荐内容</text>
+      <button class="empty-btn" bindtap="fetchRecommendations">获取推荐</button>
+    </view>
+  </view>
+
+  <view class="page-content" wx:if="{{activeTab === 'search'}}">
+    <view class="search-box">
+      <input class="search-input" placeholder="输入剧集名称搜索" value="{{searchQuery}}" bindinput="onSearchInput" bindconfirm="searchSeries" />
+      <button class="search-btn" bindtap="searchSeries">搜索</button>
+      <button class="clear-btn" bindtap="clearSearch" wx:if="{{searchQuery}}">清空</button>
+    </view>
+
+    <view class="search-results" wx:if="{{showSearch && searchResults.length > 0}}">
+      <view class="result-item" wx:for="{{searchResults}}" wx:for-item="series" wx:key="id" bindtap="goToDetail" data-id="{{series.id}}">
+        <image class="result-poster" src="{{series.cover_url}}" mode="aspectFill"></image>
+        <view class="result-info">
+          <text class="result-title">{{series.title}}</text>
+          <text class="result-rating">评分：{{series.rating}}</text>
+          <text class="result-genres">{{series.genres.join(' / ')}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-container" wx:if="{{showSearch && !loading && searchResults.length === 0}}">
+      <text class="empty-text">未找到相关剧集</text>
+    </view>
+  </view>
+
+  <view class="page-content" wx:if="{{activeTab === 'watchlist'}}">
+    <view class="watchlist-container">
+      <view class="watchlist-item" wx:for="{{alreadyList}}" wx:for-item="series" wx:key="id">
+        <image class="watchlist-poster" src="{{series.cover_url}}" mode="aspectFill" bindtap="goToDetail" data-id="{{series.id}}"></image>
+        <view class="watchlist-info" bindtap="goToDetail" data-id="{{series.id}}">
+          <text class="watchlist-title">{{series.title}}</text>
+          <text class="watchlist-rating">评分：{{series.rating}}</text>
+          <text class="watchlist-genres">{{series.genres.join(' / ')}}</text>
+        </view>
+        <button class="delete-btn" bindtap="deleteAlready" data-id="{{series.id}}">删除</button>
+      </view>
+    </view>
+
+    <view class="empty-container" wx:if="{{alreadyList.length === 0}}">
+      <text class="empty-text">暂无待看清单</text>
+      <button class="empty-btn" bindtap="goToAddSeries">添加剧集</button>
+    </view>
+  </view>
+</view>

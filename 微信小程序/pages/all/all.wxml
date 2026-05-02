@@ -1,0 +1,63 @@
+<view class="container">
+  <view class="search-bar">
+    <text class="page-title">全部影视</text>
+    <view class="action-buttons">
+      <button class="batch-btn compact-btn" bindtap="toggleSelectAll">
+        {{selectedElements.length === totalList.length && totalList.length ? '取消全选' : '全选'}}
+      </button>
+      <button class="clear-btn compact-btn" bindtap="clearAllData">清空全部</button>
+    </view>
+  </view>
+
+  <view class="top-bar" wx:if="{{selectedElements.length > 0}}">
+    <button class="delete-btn" bindtap="batchDelete">批量删除（{{selectedElements.length}}）</button>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <view class="empty" wx:elif="{{totalList.length === 0}}">
+    <text>暂无内容</text>
+  </view>
+
+  <view class="grid-list" wx:else>
+    <view class="grid-row" wx:for="{{rowCount}}" wx:for-index="rowIndex" wx:key="rowIndex">
+      <view class="grid-col">
+        <view class="movie-item" wx:if="{{rowIndex * 2 < totalList.length}}">
+          <checkbox class="selector" data-key="{{totalList[rowIndex * 2].uniqueId}}" checked="{{totalList[rowIndex * 2].checked}}" bindtap="toggleItemSelection" />
+          <image class="cover-image" src="{{totalList[rowIndex * 2].coverUrl || totalList[rowIndex * 2].cover_url || '/images/default_movie.png'}}" mode="aspectFill"></image>
+          <view class="movie-info">
+            <text class="title">{{totalList[rowIndex * 2].title || totalList[rowIndex * 2].name}}</text>
+            <text class="type">{{totalList[rowIndex * 2].content_type === 'series' ? '剧集' : '电影'}}</text>
+            <text class="rating">评分：{{totalList[rowIndex * 2].rating || '暂无评分'}}</text>
+            <text class="year">年份：{{totalList[rowIndex * 2].year || '未知'}}</text>
+            <text class="tags" wx:if="{{totalList[rowIndex * 2].selectedElements.length}}">
+              标签：{{totalList[rowIndex * 2].selectedElements.join(' / ')}}
+            </text>
+            <text class="comment" wx:if="{{totalList[rowIndex * 2].comment}}">短评：{{totalList[rowIndex * 2].comment}}</text>
+          </view>
+          <button class="item-delete-btn" catchtap="deleteItem" data-key="{{totalList[rowIndex * 2].uniqueId}}">删除</button>
+        </view>
+      </view>
+
+      <view class="grid-col">
+        <view class="movie-item" wx:if="{{rowIndex * 2 + 1 < totalList.length}}">
+          <checkbox class="selector" data-key="{{totalList[rowIndex * 2 + 1].uniqueId}}" checked="{{totalList[rowIndex * 2 + 1].checked}}" bindtap="toggleItemSelection" />
+          <image class="cover-image" src="{{totalList[rowIndex * 2 + 1].coverUrl || totalList[rowIndex * 2 + 1].cover_url || '/images/default_movie.png'}}" mode="aspectFill"></image>
+          <view class="movie-info">
+            <text class="title">{{totalList[rowIndex * 2 + 1].title || totalList[rowIndex * 2 + 1].name}}</text>
+            <text class="type">{{totalList[rowIndex * 2 + 1].content_type === 'series' ? '剧集' : '电影'}}</text>
+            <text class="rating">评分：{{totalList[rowIndex * 2 + 1].rating || '暂无评分'}}</text>
+            <text class="year">年份：{{totalList[rowIndex * 2 + 1].year || '未知'}}</text>
+            <text class="tags" wx:if="{{totalList[rowIndex * 2 + 1].selectedElements.length}}">
+              标签：{{totalList[rowIndex * 2 + 1].selectedElements.join(' / ')}}
+            </text>
+            <text class="comment" wx:if="{{totalList[rowIndex * 2 + 1].comment}}">短评：{{totalList[rowIndex * 2 + 1].comment}}</text>
+          </view>
+          <button class="item-delete-btn" catchtap="deleteItem" data-key="{{totalList[rowIndex * 2 + 1].uniqueId}}">删除</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

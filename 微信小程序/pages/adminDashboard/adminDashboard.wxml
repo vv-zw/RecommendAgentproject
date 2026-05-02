@@ -1,0 +1,50 @@
+<view class="admin-page">
+  <view class="admin-header">
+    <view>
+      <view class="page-title">管理员仪表盘</view>
+      <view class="page-subtitle">当前账号：{{wx.getStorageSync('adminUsername') || 'admin'}}</view>
+    </view>
+    <button class="ghost-btn" bindtap="logout">退出</button>
+  </view>
+
+  <view wx:if="{{error}}" class="error-box">{{error}}</view>
+  <view wx:if="{{loading}}" class="loading-box">正在加载仪表盘...</view>
+
+  <view wx:if="{{stats && !loading}}" class="stats-grid">
+    <view class="stat-card">
+      <view class="stat-label">电影内容</view>
+      <view class="stat-value">{{stats.movie_count}}</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-label">剧集内容</view>
+      <view class="stat-value">{{stats.series_count}}</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-label">偏好记录</view>
+      <view class="stat-value">{{stats.preference_count}}</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-label">待看记录</view>
+      <view class="stat-value">{{stats.watchlist_count}}</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-label">负反馈</view>
+      <view class="stat-value">{{stats.feedback_count}}</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-label">数据库状态</view>
+      <view class="stat-value small">{{stats.database_enabled ? '已启用' : '未启用'}}</view>
+    </view>
+  </view>
+
+  <view class="action-card">
+    <button class="primary-btn" bindtap="goToContent">进入内容管理</button>
+    <button class="secondary-btn" bindtap="goToBehavior">进入用户行为分析</button>
+  </view>
+
+  <view wx:if="{{stats && !loading}}" class="meta-card">
+    <view class="meta-title">推荐状态</view>
+    <view class="meta-item">最近电影推荐：{{stats.latest_movie_generated_time || '暂无记录'}}</view>
+    <view class="meta-item">最近剧集推荐：{{stats.latest_series_generated_time || '暂无记录'}}</view>
+  </view>
+</view>

@@ -1,0 +1,4 @@
+<view class="container">
+  <web-view src="{{url}}"></web-view>
+  <button class="refresh-btn" bindtap="onRefresh">验证完成后点击刷新</button>
+</view>

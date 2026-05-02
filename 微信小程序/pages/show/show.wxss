@@ -1,0 +1,233 @@
+.container {
+  min-height: 100vh;
+  padding: 26rpx 26rpx 80rpx;
+  background:
+    radial-gradient(circle at top left, rgba(255, 244, 226, 0.95) 0, rgba(255, 244, 226, 0) 34%),
+    linear-gradient(180deg, #f7f0e7 0%, #f2eadf 46%, #efe6da 100%);
+  box-sizing: border-box;
+}
+
+.search-bar,
+.top-bar,
+.result-card,
+.drama-item,
+.history-section,
+.error-msg,
+.loading,
+.empty {
+  background: rgba(255, 252, 247, 0.94);
+  border: 1rpx solid rgba(122, 92, 62, 0.08);
+  border-radius: 28rpx;
+  box-shadow: 0 20rpx 50rpx rgba(63, 42, 22, 0.08);
+  backdrop-filter: blur(12rpx);
+}
+
+.search-bar,
+.top-bar,
+.history-section,
+.error-msg,
+.loading,
+.empty {
+  padding: 24rpx;
+}
+
+.search-bar {
+  display: flex;
+  gap: 18rpx;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.search-input {
+  flex: 1;
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  background: #fbf7f2;
+  border: 1rpx solid rgba(122, 92, 62, 0.08);
+  font-size: 28rpx;
+  color: #2d221b;
+}
+
+.search-btn,
+.batch-btn,
+.delete-btn,
+.clear-btn,
+.save-btn,
+.item-delete-btn {
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.search-btn,
+.save-btn,
+.batch-btn {
+  background: linear-gradient(135deg, #d16f45 0%, #ba5b36 100%);
+  color: #fff;
+}
+
+.clear-btn {
+  background: linear-gradient(135deg, #e7ded1 0%, #d9ccb9 100%);
+  color: #4f4135;
+}
+
+.delete-btn,
+.item-delete-btn {
+  background: linear-gradient(135deg, #c2554b 0%, #a63e37 100%);
+  color: #fff;
+}
+
+.top-bar {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+  flex-wrap: wrap;
+}
+
+.top-bar button {
+  flex: 1;
+  min-width: 200rpx;
+}
+
+.result-card {
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  gap: 22rpx;
+}
+
+.result-poster {
+  width: 176rpx;
+  height: 236rpx;
+  flex-shrink: 0;
+  border-radius: 22rpx;
+  background: linear-gradient(180deg, #f3e7d8 0%, #ead6bf 100%);
+  box-shadow: 0 14rpx 28rpx rgba(68, 45, 24, 0.12);
+}
+
+.result-info,
+.drama-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-title,
+.title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #24180f;
+  line-height: 1.4;
+}
+
+.result-rating,
+.rating {
+  display: block;
+  margin-top: 12rpx;
+  color: #8d5e00;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.result-genres,
+.result-year,
+.result-episodes,
+.result-region,
+.result-comment,
+.genres,
+.year,
+.episodes,
+.region,
+.comment {
+  display: block;
+  margin-top: 8rpx;
+  color: #715d4a;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.save-btn {
+  margin-top: 18rpx;
+}
+
+.error-msg,
+.loading,
+.empty {
+  text-align: center;
+  color: #6f5e4e;
+  font-size: 26rpx;
+  margin-bottom: 20rpx;
+}
+
+.grid-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.grid-row {
+  display: flex;
+  gap: 18rpx;
+}
+
+.grid-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.drama-item {
+  width: 100%;
+  padding: 20rpx;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.selector {
+  position: absolute;
+  top: 18rpx;
+  right: 18rpx;
+  z-index: 10;
+  transform: scale(1.1);
+}
+
+.cover-image {
+  width: 100%;
+  height: 300rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(180deg, #f3e7d8 0%, #ead6bf 100%);
+}
+
+.drama-info {
+  margin-top: 16rpx;
+}
+
+.item-delete-btn {
+  width: 100%;
+  margin-top: 16rpx;
+}
+
+.history-section {
+  margin-top: 24rpx;
+}
+
+.history-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #24180f;
+}
+
+.history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.history-item {
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: #f1e6d8;
+  color: #6f5542;
+  font-size: 22rpx;
+}

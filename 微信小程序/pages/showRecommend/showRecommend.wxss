@@ -1,0 +1,268 @@
+.container {
+  min-height: 100vh;
+  padding-bottom: 40rpx;
+  background:
+    radial-gradient(circle at top left, rgba(255, 244, 226, 0.95) 0, rgba(255, 244, 226, 0) 34%),
+    linear-gradient(180deg, #f7f0e7 0%, #f2eadf 46%, #efe6da 100%);
+}
+
+.nav-bar,
+.tab-bar,
+.reason-container,
+.grid-item,
+.result-item,
+.watchlist-item,
+.error-container,
+.loading-container,
+.empty-container {
+  background: rgba(255, 252, 247, 0.94);
+  border: 1rpx solid rgba(122, 92, 62, 0.08);
+  border-radius: 28rpx;
+  box-shadow: 0 20rpx 50rpx rgba(63, 42, 22, 0.08);
+}
+
+.nav-bar {
+  margin: 26rpx 26rpx 16rpx;
+  padding: 24rpx 26rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #24180f;
+}
+
+.refresh-btn,
+.retry-btn,
+.empty-btn,
+.search-btn,
+.clear-btn,
+.watch-btn,
+.dislike-btn,
+.delete-btn {
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.refresh-btn,
+.retry-btn,
+.empty-btn,
+.search-btn,
+.watch-btn {
+  background: linear-gradient(135deg, #d16f45 0%, #ba5b36 100%);
+  color: #fff;
+}
+
+.clear-btn {
+  background: linear-gradient(135deg, #e7ded1 0%, #d9ccb9 100%);
+  color: #4f4135;
+}
+
+.dislike-btn,
+.delete-btn {
+  background: linear-gradient(135deg, #c2554b 0%, #a63e37 100%);
+  color: #fff;
+}
+
+.tab-bar {
+  margin: 0 26rpx 16rpx;
+  padding: 12rpx;
+  display: flex;
+  gap: 12rpx;
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 18rpx 0;
+  border-radius: 18rpx;
+  background: #efe4d3;
+  color: #6d5b49;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.tab-item.active {
+  background: linear-gradient(135deg, #22363b, #3d585f);
+  color: #fff;
+}
+
+.page-content {
+  padding: 0 26rpx;
+}
+
+.loading-container,
+.error-container,
+.reason-container,
+.empty-container {
+  padding: 24rpx;
+  margin-bottom: 18rpx;
+}
+
+.loading-text,
+.error-text,
+.empty-text,
+.reason-title {
+  color: #6f5e4e;
+  font-size: 24rpx;
+}
+
+.reason-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #24180f;
+  margin-bottom: 14rpx;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.tag-item {
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #f1e6d8;
+  color: #6f5542;
+  font-size: 22rpx;
+}
+
+.grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.grid-row {
+  display: flex;
+  gap: 18rpx;
+}
+
+.grid-item {
+  flex: 1;
+  overflow: hidden;
+  padding-bottom: 18rpx;
+}
+
+.poster-img,
+.result-poster,
+.watchlist-poster {
+  width: 100%;
+  height: 260rpx;
+  border-radius: 22rpx 22rpx 0 0;
+  background: linear-gradient(180deg, #f3e7d8 0%, #ead6bf 100%);
+}
+
+.movie-title,
+.movie-rating,
+.movie-genres,
+.movie-match {
+  display: block;
+  padding: 0 18rpx;
+}
+
+.movie-title {
+  margin-top: 16rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #24180f;
+}
+
+.movie-rating,
+.watchlist-rating,
+.result-rating {
+  margin-top: 10rpx;
+  color: #8d5e00;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.movie-genres,
+.movie-match,
+.watchlist-genres,
+.result-genres {
+  margin-top: 8rpx;
+  color: #715d4a;
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12rpx;
+  padding: 16rpx 18rpx 0;
+}
+
+.action-btn {
+  flex: 1;
+  height: 72rpx;
+  line-height: 72rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  padding: 0;
+  box-shadow: none;
+}
+
+.watch-btn {
+  background: #f5ede4;
+  color: #5f4b3a;
+  border: 1rpx solid rgba(122, 92, 62, 0.14);
+}
+
+.dislike-btn {
+  background: #f8e5e1;
+  color: #9d4239;
+  border: 1rpx solid rgba(157, 66, 57, 0.16);
+}
+
+.search-box {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 18rpx;
+}
+
+.search-input {
+  flex: 1;
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 252, 247, 0.94);
+  border: 1rpx solid rgba(122, 92, 62, 0.08);
+  font-size: 28rpx;
+}
+
+.result-item,
+.watchlist-item {
+  padding: 18rpx;
+  margin-bottom: 16rpx;
+  display: flex;
+  gap: 18rpx;
+  align-items: center;
+}
+
+.result-poster,
+.watchlist-poster {
+  width: 140rpx;
+  height: 200rpx;
+  flex-shrink: 0;
+  border-radius: 18rpx;
+}
+
+.result-info,
+.watchlist-info {
+  flex: 1;
+}
+
+.result-title,
+.watchlist-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #24180f;
+}

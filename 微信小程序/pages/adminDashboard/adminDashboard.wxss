@@ -1,0 +1,106 @@
+.admin-page {
+  min-height: 100vh;
+  background: #f5efe5;
+  padding: 26rpx;
+}
+
+.admin-header,
+.stat-card,
+.action-card,
+.meta-card,
+.error-box,
+.loading-box {
+  background: #fffdf8;
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 42rpx rgba(46, 30, 11, 0.06);
+}
+
+.admin-header {
+  padding: 28rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22rpx;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #25180f;
+}
+
+.page-subtitle {
+  margin-top: 8rpx;
+  color: #7c6c5c;
+  font-size: 24rpx;
+}
+
+.ghost-btn,
+.primary-btn,
+.secondary-btn {
+  border-radius: 18rpx;
+}
+
+.ghost-btn {
+  background: #f1e6d8;
+  color: #5f4737;
+}
+
+.primary-btn {
+  background: #c8643b;
+  color: #fff;
+  margin-bottom: 20rpx;
+}
+
+.secondary-btn {
+  margin-top: 14rpx;
+  background: #24363c;
+  color: #fff;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
+}
+
+.stat-card {
+  padding: 26rpx;
+}
+
+.stat-label {
+  color: #7c6d60;
+  font-size: 24rpx;
+}
+
+.stat-value {
+  margin-top: 14rpx;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #24180f;
+}
+
+.stat-value.small {
+  font-size: 32rpx;
+}
+
+.action-card,
+.meta-card,
+.error-box,
+.loading-box {
+  margin-top: 22rpx;
+  padding: 28rpx;
+}
+
+.meta-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+}
+
+.meta-item,
+.error-box,
+.loading-box {
+  font-size: 26rpx;
+  color: #5f5044;
+}

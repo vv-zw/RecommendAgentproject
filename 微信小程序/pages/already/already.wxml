@@ -1,0 +1,59 @@
+<view class="container">
+  <view class="header">
+    <text class="title">待看列表</text>
+  </view>
+
+  <view class="list-container">
+    <view wx:if="{{alreadyList.length === 0}}" class="empty-state">
+      <text class="empty-text">暂无待看内容</text>
+    </view>
+
+    <view wx:else class="grid-list">
+      <view class="grid-row" wx:for="{{rowCount}}" wx:for-index="rowIndex" wx:key="rowIndex">
+        <view class="grid-col">
+          <view class="item" wx:if="{{rowIndex * 2 < alreadyList.length}}">
+            <image
+              class="poster"
+              src="{{alreadyList[rowIndex * 2].coverUrl || '/images/default_movie.png'}}"
+              mode="aspectFill"
+            ></image>
+
+            <view class="info">
+              <text class="name">{{alreadyList[rowIndex * 2].name}}</text>
+              <view class="tags">
+                <text wx:for="{{alreadyList[rowIndex * 2].selectedElements}}" wx:key="index" class="tag">{{item}}</text>
+              </view>
+              <text class="comment" wx:if="{{alreadyList[rowIndex * 2].comment}}">短评：{{alreadyList[rowIndex * 2].comment}}</text>
+            </view>
+
+            <button bindtap="deleteAlready" data-id="{{alreadyList[rowIndex * 2].id}}" class="delete-btn">
+              删除
+            </button>
+          </view>
+        </view>
+
+        <view class="grid-col">
+          <view class="item" wx:if="{{rowIndex * 2 + 1 < alreadyList.length}}">
+            <image
+              class="poster"
+              src="{{alreadyList[rowIndex * 2 + 1].coverUrl || '/images/default_movie.png'}}"
+              mode="aspectFill"
+            ></image>
+
+            <view class="info">
+              <text class="name">{{alreadyList[rowIndex * 2 + 1].name}}</text>
+              <view class="tags">
+                <text wx:for="{{alreadyList[rowIndex * 2 + 1].selectedElements}}" wx:key="index" class="tag">{{item}}</text>
+              </view>
+              <text class="comment" wx:if="{{alreadyList[rowIndex * 2 + 1].comment}}">短评：{{alreadyList[rowIndex * 2 + 1].comment}}</text>
+            </view>
+
+            <button bindtap="deleteAlready" data-id="{{alreadyList[rowIndex * 2 + 1].id}}" class="delete-btn">
+              删除
+            </button>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

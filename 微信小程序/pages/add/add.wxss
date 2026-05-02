@@ -1,0 +1,253 @@
+.page-container {
+  min-height: 100vh;
+  padding: 26rpx 26rpx 180rpx;
+  background:
+    radial-gradient(circle at top left, rgba(255, 244, 226, 0.95) 0, rgba(255, 244, 226, 0) 34%),
+    linear-gradient(180deg, #f7f0e7 0%, #f2eadf 46%, #efe6da 100%);
+  box-sizing: border-box;
+}
+
+.hero-card,
+.form-card {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 252, 247, 0.94);
+  border: 1rpx solid rgba(122, 92, 62, 0.08);
+  border-radius: 32rpx;
+  box-shadow: 0 20rpx 50rpx rgba(63, 42, 22, 0.08);
+}
+
+.hero-card {
+  padding: 32rpx 30rpx;
+  margin-bottom: 24rpx;
+  background: linear-gradient(135deg, #fff8ee 0%, #f7ecdf 58%, #f0dfd1 100%);
+}
+
+.hero-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hero-glow {
+  position: absolute;
+  border-radius: 999rpx;
+  opacity: 0.7;
+}
+
+.hero-glow-one {
+  top: -50rpx;
+  right: -20rpx;
+  width: 220rpx;
+  height: 220rpx;
+  background: rgba(200, 100, 59, 0.12);
+}
+
+.hero-glow-two {
+  right: 110rpx;
+  bottom: -70rpx;
+  width: 180rpx;
+  height: 180rpx;
+  background: rgba(36, 54, 60, 0.1);
+}
+
+.back-chip,
+.hero-tag {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.68);
+  color: #6c5442;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.hero-tag {
+  letter-spacing: 3rpx;
+  font-size: 20rpx;
+}
+
+.page-title {
+  position: relative;
+  z-index: 1;
+  margin-top: 24rpx;
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #24170f;
+}
+
+.page-subtitle {
+  position: relative;
+  z-index: 1;
+  margin-top: 12rpx;
+  font-size: 25rpx;
+  line-height: 1.8;
+  color: #766657;
+}
+
+.form-card {
+  padding: 28rpx;
+  margin-bottom: 22rpx;
+}
+
+.section-title {
+  font-size: 31rpx;
+  font-weight: 700;
+  color: #24180f;
+}
+
+.section-subtitle {
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  line-height: 1.7;
+  color: #8a7a6a;
+}
+
+.selection-summary {
+  display: inline-block;
+  margin-top: 18rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #f1e6d8;
+  color: #6f5542;
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.field-block {
+  margin-top: 24rpx;
+}
+
+.field-label {
+  margin-bottom: 14rpx;
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #564536;
+}
+
+.input-field,
+.picker-field,
+.picker-display,
+.textarea-field {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 28rpx;
+  color: #2d221b;
+}
+
+.input-field,
+.picker-display,
+.textarea-field {
+  padding: 24rpx 22rpx;
+  border-radius: 22rpx;
+  background: #fbf7f2;
+  border: 1rpx solid rgba(122, 92, 62, 0.08);
+}
+
+.textarea-field {
+  min-height: 180rpx;
+  line-height: 1.8;
+}
+
+.tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: 20rpx;
+}
+
+.tag-item {
+  width: calc((100% - 32rpx) / 3);
+  min-height: 60rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8rpx;
+  border-radius: 999rpx;
+  background: #f7f1e9;
+  color: #6a5444;
+  font-size: 22rpx;
+  margin: 0;
+  line-height: 1.2;
+  border: 1rpx solid rgba(122, 92, 62, 0.08);
+  text-align: center;
+  box-sizing: border-box;
+  gap: 8rpx;
+  overflow: hidden;
+  margin-bottom: 16rpx;
+}
+
+.tag-item-active {
+  background: #c8643b;
+  color: #fff;
+  border-color: #c8643b;
+  box-shadow: 0 8rpx 18rpx rgba(200, 100, 59, 0.18);
+}
+
+.tag-indicator {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  border: none;
+  background: #d8c7b6;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.tag-indicator-active {
+  background: #fff2e9;
+}
+
+.tag-label {
+  font-size: 22rpx;
+  font-weight: 500;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.tag-item::after {
+  border: none;
+}
+
+.comment-card {
+  position: relative;
+  z-index: 2;
+}
+
+.action-bar {
+  margin-top: 10rpx;
+  padding-bottom: 34rpx;
+  display: flex;
+  gap: 18rpx;
+}
+
+.action-bar button {
+  flex: 1;
+  height: 92rpx;
+  line-height: 92rpx;
+  border-radius: 999rpx;
+  font-size: 29rpx;
+  font-weight: 700;
+}
+
+.action-bar button::after {
+  border: none;
+}
+
+.back-btn {
+  background: linear-gradient(135deg, #f0e5d7 0%, #e5d5c0 100%);
+  color: #584537;
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #d16f45 0%, #ba5b36 100%);
+  color: #fff;
+  box-shadow: 0 18rpx 34rpx rgba(200, 100, 59, 0.3);
+}

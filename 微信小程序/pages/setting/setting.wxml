@@ -1,0 +1,74 @@
+<view class="page-container {{theme === 'dark' ? 'dark-theme' : ''}}">
+  <view class="hero-card">
+    <view class="hero-glow hero-glow-one"></view>
+    <view class="hero-glow hero-glow-two"></view>
+    <view class="hero-top">
+      <view class="back-chip" bindtap="goBack">返回</view>
+      <view class="hero-tag">SETTINGS</view>
+    </view>
+    <view class="page-title">设置中心</view>
+    <view class="page-subtitle">管理主题、通知、推荐偏好和缓存数据。</view>
+  </view>
+
+  <view class="panel-card">
+    <view class="section-title">偏好设置</view>
+
+    <view class="setting-item">
+      <view>
+        <view class="item-label">深色模式</view>
+        <view class="item-desc">切换当前页面的显示主题</view>
+      </view>
+      <switch class="item-switch" checked="{{theme === 'dark'}}" bindchange="toggleTheme" color="#c8643b" />
+    </view>
+
+    <view class="setting-item">
+      <view>
+        <view class="item-label">接收通知</view>
+        <view class="item-desc">获取推荐和同步状态提醒</view>
+      </view>
+      <switch class="item-switch" checked="{{notifications}}" bindchange="toggleNotifications" color="#c8643b" />
+    </view>
+
+    <view class="setting-item">
+      <view>
+        <view class="item-label">推荐模式</view>
+        <view class="item-desc">选择自动推荐或手动筛选</view>
+      </view>
+      <picker
+        class="item-picker"
+        mode="selector"
+        range="{{recommendModeOptions}}"
+        value="{{recommendModeIndex}}"
+        bindchange="changeRecommendMode"
+      >
+        <view class="picker-value">{{recommendModeOptions[recommendModeIndex]}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="panel-card">
+    <view class="section-title">数据与管理</view>
+
+    <view class="setting-item touchable" bindtap="clearCache">
+      <view>
+        <view class="item-label">清除缓存</view>
+        <view class="item-desc">释放本地存储空间</view>
+      </view>
+      <view class="item-value">{{cacheSize}}</view>
+    </view>
+
+    <view class="setting-item touchable" bindtap="goToAdmin">
+      <view>
+        <view class="item-label">管理员后台</view>
+        <view class="item-desc">进入内容与推荐管理</view>
+      </view>
+      <view class="item-value">进入</view>
+    </view>
+  </view>
+
+  <view class="about-card">
+    <view class="section-title">关于我们</view>
+    <view class="about-version">版本号 v1.0.0</view>
+    <view class="about-desc">影视推荐小程序 · 2026</view>
+  </view>
+</view>

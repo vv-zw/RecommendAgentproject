@@ -1,0 +1,129 @@
+<view class="behavior-page">
+  <view class="hero-panel">
+    <view class="hero-copy">
+      <view class="page-title">用户行为分析</view>
+      <view class="page-subtitle">把趋势、类型和高频内容整合成一张更直观的分析页面。</view>
+    </view>
+    <view class="hero-chip">Admin Insight</view>
+  </view>
+
+  <view class="tab-bar">
+    <block wx:for="{{tabOptions}}" wx:key="key" wx:for-item="tab">
+      <view
+        class="tab-item {{currentTab === tab.key ? 'active' : ''}}"
+        data-tab="{{tab.key}}"
+        bindtap="switchTab"
+      >
+        {{tab.label}}
+      </view>
+    </block>
+  </view>
+
+  <view wx:if="{{error}}" class="error-box">{{error}}</view>
+  <view wx:if="{{loading}}" class="loading-box">正在加载行为分析...</view>
+
+  <view wx:if="{{summary && viewModel && !loading}}" class="content-stack">
+    <view class="insight-card">
+      <view class="insight-title">{{viewModel.insight.title}}</view>
+      <view class="insight-desc">{{viewModel.insight.description}}</view>
+      <view class="badge-row">
+        <block wx:for="{{viewModel.insight.badges}}" wx:key="*this" wx:for-item="badge">
+          <view class="insight-badge">{{badge}}</view>
+        </block>
+      </view>
+    </view>
+
+    <view class="metric-grid">
+      <block wx:for="{{summary.cards}}" wx:key="label" wx:for-item="card">
+        <view class="metric-card {{card.accent}}">
+          <view class="metric-label">{{card.label}}</view>
+          <view class="metric-value">{{card.value}}</view>
+        </view>
+      </block>
+    </view>
+
+    <view class="panel-card">
+      <view class="panel-head">
+        <view>
+          <view class="panel-title">{{summary.trend.title}}</view>
+          <view class="panel-desc">用原生柱状条模拟趋势图，既保留可读性，也方便后续替换为正式折线图。</view>
+        </view>
+        <view class="panel-tag">趋势图</view>
+      </view>
+
+      <block wx:for="{{viewModel.trendSeries}}" wx:key="label" wx:for-item="series">
+        <view class="trend-group">
+          <view class="trend-group-head">
+            <view class="trend-label">{{series.label}}</view>
+          </view>
+          <view class="trend-chart">
+            <block wx:for="{{series.points}}" wx:key="label" wx:for-item="point">
+              <view class="trend-bar-wrap">
+                <view class="trend-bar {{series.accentClass}} {{point.isLast ? 'is-last' : ''}}" style="{{point.barStyle}}"></view>
+                <view class="trend-value">{{point.value}}</view>
+                <view class="trend-date">{{point.label}}</view>
+              </view>
+            </block>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="panel-card">
+      <view class="panel-head">
+        <view>
+          <view class="panel-title">热门类型分布</view>
+          <view class="panel-desc">条形图展示当前最活跃的偏好类型，方便快速看出内容倾向。</view>
+        </view>
+        <view class="panel-tag">分布图</view>
+      </view>
+
+      <block wx:for="{{viewModel.genreDistribution}}" wx:key="label" wx:for-item="genre">
+        <view class="genre-row">
+          <view class="genre-meta">
+            <view class="genre-name">{{genre.label}}</view>
+            <view class="genre-count">{{genre.value}}</view>
+          </view>
+          <view class="genre-track">
+            <view class="genre-fill" style="{{genre.fillStyle}}"></view>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="panel-card">
+      <view class="panel-head">
+        <view>
+          <view class="panel-title">高频内容榜单</view>
+          <view class="panel-desc">用卡片和文字摘要同时展示最常被偏好、待看和负反馈的内容。</view>
+        </view>
+        <view class="panel-tag">榜单</view>
+      </view>
+
+      <view class="leader-grid">
+        <block wx:for="{{viewModel.topLists}}" wx:key="key" wx:for-item="bucket">
+          <view class="leader-card {{bucket.tone}}">
+            <view class="leader-top">
+              <view class="leader-title">{{bucket.title}}</view>
+              <view class="leader-empty" wx:if="{{!bucket.lead}}">{{bucket.emptyText}}</view>
+              <block wx:if="{{bucket.lead}}">
+                <view class="leader-name">{{bucket.lead.title}}</view>
+                <view class="leader-count">{{bucket.lead.count}} 次</view>
+              </block>
+            </view>
+
+            <view class="leader-list">
+              <block wx:for="{{bucket.items}}" wx:key="title" wx:for-item="entry">
+                <view class="leader-item">
+                  <view class="leader-rank">{{entry.rank}}</view>
+                  <view class="leader-item-name">{{entry.title}}</view>
+                  <view class="leader-item-count">{{entry.count}}</view>
+                </view>
+              </block>
+            </view>
+          </view>
+        </block>
+      </view>
+    </view>
+  </view>
+</view>

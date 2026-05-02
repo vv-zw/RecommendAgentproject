@@ -1,0 +1,105 @@
+<view class="page-container">
+  <view class="hero-card">
+    <view class="hero-orb hero-orb-left"></view>
+    <view class="hero-orb hero-orb-right"></view>
+    <view class="hero-grid">
+      <view class="hero-copy">
+        <view class="hero-tag">SCREEN LIBRARY</view>
+        <view class="page-title">你的影视主页</view>
+        <view class="page-subtitle">围绕电影、剧集与待看清单做统一整理，首页直接进入各个核心功能区。</view>
+      </view>
+      <view class="hero-stats">
+        <view class="stat-card">
+          <view class="stat-value">{{quickStats.total}}</view>
+          <view class="stat-label">全部记录</view>
+        </view>
+        <view class="stat-card">
+          <view class="stat-value">{{quickStats.watchlist}}</view>
+          <view class="stat-label">待看条目</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="nav-section">
+    <view class="section-header">
+      <view>
+        <view class="section-title">内容导航</view>
+        <view class="section-subtitle">对称布局的四个主入口，保持电影、剧集、全部和待看清单并列展示。</view>
+      </view>
+      <view class="section-badge">{{navigationCards.length}} 区</view>
+    </view>
+
+    <view class="nav-grid">
+      <view
+        class="nav-card nav-card-{{item.theme}}"
+        wx:for="{{navigationCards}}"
+        wx:key="key"
+        bindtap="onNavCardTap"
+        data-action="{{item.action}}"
+      >
+        <view class="nav-card-top">
+          <view class="nav-icon">{{item.icon}}</view>
+          <view class="nav-badge">{{item.badge}}</view>
+        </view>
+        <view class="nav-title">{{item.title}}</view>
+        <view class="nav-subtitle">{{item.subtitle}}</view>
+      </view>
+    </view>
+
+    <view class="action-row">
+      <button class="primary-btn" bindtap="goToRecommend">进入推荐页</button>
+      <button class="secondary-btn" bindtap="goSetting">设置</button>
+    </view>
+  </view>
+
+  <view class="list-section">
+    <view class="section-header">
+      <view>
+        <view class="section-title">最近内容</view>
+        <view class="section-subtitle">展示已保存的电影与剧集记录，不改变你原本的数据结构。</view>
+      </view>
+      <view class="section-badge">{{movieList.length}} 条</view>
+    </view>
+
+    <block wx:if="{{movieList.length > 0}}">
+      <block wx:for="{{movieList}}" wx:key="id">
+        <view class="item-card">
+          <view class="item-accent"></view>
+          <view class="item-main">
+            <image
+              class="item-cover"
+              src="{{item.displayCover}}"
+              mode="aspectFill"
+              lazy-load
+              binderror="handleCoverError"
+              data-id="{{item.id}}"
+            ></image>
+
+            <view class="item-content">
+              <view class="item-header">
+                <view class="item-name">{{item.name}}</view>
+                <view class="item-score">{{item.score}}</view>
+              </view>
+              <view class="item-meta">
+                <view class="item-type">{{item.type}}</view>
+              </view>
+              <view class="item-comment">{{item.comment}}</view>
+            </view>
+          </view>
+          <view class="item-footer">
+            <button class="delete-btn" bindtap="deleteItem" data-id="{{item.id}}">删除</button>
+          </view>
+        </view>
+      </block>
+    </block>
+
+    <view wx:else class="empty-card">
+      <view class="empty-mark">LIBRARY</view>
+      <view class="empty-title">还没有影视记录</view>
+      <view class="empty-text">可以先添加一部电影或剧集，或者直接进入推荐页开始浏览。</view>
+    </view>
+  </view>
+
+  <button class="add-btn" bindtap="goAdd">+ 添加影视</button>
+</view>

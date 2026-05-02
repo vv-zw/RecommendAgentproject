@@ -1,0 +1,4 @@
+<view class="container">
+  <view class="stat-item">总记录数：{{total}}</view>
+  <view class="stat-item">平均评分：{{avgScore.toFixed(1)}}星</view>
+</view>

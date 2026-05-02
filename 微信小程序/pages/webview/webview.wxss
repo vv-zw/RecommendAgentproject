@@ -1,0 +1,23 @@
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+web-view {
+  flex: 1;
+  width: 100%;
+}
+
+.refresh-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background-color: #07c160;
+  color: white;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  font-size: 16px;
+}
