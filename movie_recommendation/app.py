@@ -99,6 +99,10 @@ try:
         smart_search,
     )
     from watchlist.manager import manage_watchlist
+    # AI Recommendation Pipeline Imports
+    from agent.recommendation_agent import RecommendationAgent
+    from orchestrator.recommendation_orchestrator import RecommendationOrchestrator
+    from orchestrator.explanation_generator import generate_explanation
 
     print("[OK] 成功加载所有模块")
 except ImportError as e:
@@ -126,6 +130,10 @@ except ImportError as e:
 app = Flask(__name__)
 app.secret_key = getattr(config_instance, "SECRET_KEY", "dev-secret-key-change-in-production")
 CORS(app, resources={r"/*": {"origins": "*"}})  # 更宽松的CORS配置
+
+# AI Pipeline Singleton Instances
+agent = RecommendationAgent()
+orchestrator = RecommendationOrchestrator()
 
 # 全局配置引用
 Config = config_instance
@@ -995,6 +1003,60 @@ app.view_functions['get_recommend'] = get_recommend_v2
 app.view_functions['refresh_recommendations'] = refresh_recommendations_v2
 
 
+# --------------------------
+# AI Recommendation Pipeline API
+# --------------------------
+@app.route("/api/ai/recommend/full", methods=["POST"])
+def full_ai_recommend():
+    """The main endpoint for the entire AI recommendation pipeline."""
+    try:
+        data = request.get_json() or {}
+        user_id = data.get('user_id', 1) # Default to user 1 for demo
+        query = data.get('query', '')
+
+        if not query:
+            return jsonify({"code": 400, "error": "Query is required"}), 400
+
+        # Phase 1: Get decision from Agent
+        agent_input = {
+            "user_id": user_id,
+            "query": query,
+            "context": {
+                "device": "web",
+                "history": [] if user_id != 1 else [123] # Mock history for user 1
+            }
+        }
+        agent_decision = agent.decide(agent_input)
+
+        # Phase 3: Get final recommendations from Orchestrator
+        orchestrator_input = {
+            "user_id": user_id,
+            "query": query,
+            "agent_decision": agent_decision
+        }
+        orchestrator_output = orchestrator.orchestrate(orchestrator_input)
+
+        # Phase 4: Generate human-readable explanation
+        explanation = generate_explanation(agent_decision, orchestrator_output)
+
+        # Final response for the frontend
+        final_response = {
+            "recommendations": orchestrator_output.get("recommendations", []),
+            "explanation": explanation,
+            "debug_trace": {
+                "agent_decision": agent_decision,
+                "orchestrator_trace": orchestrator_output.get("debug_trace", {})
+            }
+        }
+
+        return jsonify({"code": 0, "data": final_response})
+
+    except Exception as e:
+        print(f"AI Recommendation Pipeline failed: {str(e)}")
+        traceback.print_exc()
+        return jsonify({"code": 500, "error": f"Server error: {str(e)}"}), 500
+
+
 @app.route("/proxy-image", methods=["GET"])
 def proxy_image_route():
     try:
@@ -1197,29 +1259,18 @@ def system_info():
         }), 500
 
 
+# --------------------------
+# Frontend Serving
+# --------------------------
 @app.route("/")
-def index():
-    return """<h1>增强型推荐服务运行中</h1>
-    <p>API版本: v2.0</p>
-    <p>API端点:</p>
-    <ul>
-        <li>GET /api/system-info - 获取系统信息</li>
-        <li>GET /api/movies - 获取电影数据(JSON格式)</li>
-        <li>GET /api/csv-text?type=movie - 获取CSV原始文本</li>
-        <li>GET /api/download-csv?type=movie - 下载CSV文件</li>
-        <li>POST /api/get-movie-by-name - 根据电影名查询</li>
-        <li>POST /api/get-movies-by-names - 批量查询电影</li>
-        <li>POST /api/get-series-by-name - 根据剧集名查询</li>
-        <li>POST /api/get-series-by-names - 批量查询剧集</li>
-        <li>POST /sync-user-data - 同步用户数据</li>
-        <li>GET /get_recommend?type=movie&refresh=true - 获取推荐</li>
-        <li>GET /search?q=关键词 - 智能搜索</li>
-        <li>POST /negative-feedback - 提交负反馈</li>
-        <li>POST /watchlist/add - 添加到想看清单</li>
-        <li>GET /watchlist - 获取想看清单</li>
-        <li>POST /refresh-recommendations - 刷新推荐</li>
-        <li>GET /proxy-image?url=图片地址 - 图片代理服务</li>
-    </ul>"""
+def serve_frontend():
+    """Serves the main frontend HTML file."""
+    return send_file(os.path.join(os.path.dirname(PACKAGE_ROOT), 'frontend', 'index.html'))
+
+@app.route("/<path:filename>")
+def serve_static_files(filename):
+    """Serves static files like CSS and JS."""
+    return send_file(os.path.join(os.path.dirname(PACKAGE_ROOT), 'frontend', filename))
 
 
 # --------------------------
@@ -1240,5 +1291,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"初始化推荐文件警告: {e}")
 
-    # 生产环境建议关闭debug
-    app.run(host="0.0.0.0", port=5000, debug=True, threaded=True)
+    # 启动Flask应用
+    # host='0.0.0.0' 使其可以从本地网络访问
+    app.run(host='0.0.0.0', port=5000, debug=True)
