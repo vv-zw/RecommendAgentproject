@@ -1,4 +1,9 @@
 # ai_config/settings.py
+import os
+
+# --- Database Settings ---
+# 从环境变量加载数据库URL，如果未设置则为空
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 # --- Feature Flags ---
 # 控制是否开启Debug模式，输出详细的debug_trace
