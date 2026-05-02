@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-600 text-white px-4 py-2 rounded-lg hover:bg-secondary-700 transition-colors font-medium;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-md p-6 border border-gray-200;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+
+  .chat-bubble-user {
+    @apply bg-primary-100 text-primary-900 rounded-2xl rounded-tr-none px-4 py-3 max-w-[80%] self-end;
+  }
+
+  .chat-bubble-ai {
+    @apply bg-gray-100 text-gray-900 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%] self-start;
+  }
+}

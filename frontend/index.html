@@ -1,45 +1,16 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 电影推荐系统</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🤖 AI 电影推荐系统</h1>
-            <p>输入您想看的电影类型或感觉，体验 AI 驱动的个性化推荐</p>
-        </header>
-
-        <main>
-            <div class="chat-input-container">
-                <input type="text" id="query-input" placeholder="例如：推荐一部类似《星际穿越》的科幻大片">
-                <button id="submit-btn">发送</button>
-            </div>
-
-            <div id="loading-indicator" class="hidden">正在思考中...</div>
-
-            <div id="results-container" class="hidden">
-                <div class="recommendation-section">
-                    <h2>为您推荐</h2>
-                    <div id="recommendation-list" class="recommendation-list"></div>
-                </div>
-
-                <div class="explanation-section">
-                    <h2>🧠 AI 思考过程</h2>
-                    <div id="explanation-panel" class="explanation-panel"></div>
-                </div>
-
-                <div class="debug-section">
-                    <h2 id="debug-toggle">⚙️ 调试信息 (Debug Trace)</h2>
-                    <div id="debug-panel" class="debug-panel hidden"></div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script src="script.js"></script>
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Movie Recommendation AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
