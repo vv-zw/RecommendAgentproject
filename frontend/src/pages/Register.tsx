@@ -22,7 +22,6 @@ const Register: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // 清除对应字段的错误
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -61,31 +60,37 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+
+    if (!validateForm()) return;
 
     setIsLoading(true);
     try {
-      // 注册成功后自动登录
+      // 第一步：调用注册 API
+      await authApi.register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      // 第二步：注册成功后自动登录
       const loginResponse = await authApi.login({
         username: formData.username,
         password: formData.password,
       });
-      
-      // 更新状态
+
+      // 第三步：更新全局状态
       login(
         { id: loginResponse.user_id, username: formData.username, email: formData.email },
         loginResponse.access_token
       );
-      
-      // 跳转到首页
+
+      // 第四步：跳转首页
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('注册失败:', error);
+      const axiosError = error as { response?: { data?: { error?: string } } };
       setErrors({
-        submit: error.response?.data?.error || '注册失败，请稍后重试',
+        submit: axiosError.response?.data?.error || '注册失败，请稍后重试',
       });
     } finally {
       setIsLoading(false);
@@ -160,28 +165,15 @@ const Register: React.FC = () => {
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               required
             />
-            <label
-              htmlFor="terms"
-              className="ml-2 block text-sm text-gray-700"
-            >
+            <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
               我同意{' '}
-              <a href="#" className="text-primary-600 hover:text-primary-500">
-                服务条款
-              </a>{' '}
-              和{' '}
-              <a href="#" className="text-primary-600 hover:text-primary-500">
-                隐私政策
-              </a>
+              <a href="#" className="text-primary-600 hover:text-primary-500">服务条款</a>
+              {' '}和{' '}
+              <a href="#" className="text-primary-600 hover:text-primary-500">隐私政策</a>
             </label>
           </div>
 
-          <Button
-            type="submit"
-            variant="primary"
-            fullWidth
-            isLoading={isLoading}
-            disabled={isLoading}
-          >
+          <Button type="submit" variant="primary" fullWidth isLoading={isLoading} disabled={isLoading}>
             注册
           </Button>
         </form>
@@ -189,10 +181,7 @@ const Register: React.FC = () => {
         <div className="mt-6 text-center">
           <p className="text-gray-600">
             已有账户？{' '}
-            <Link
-              to="/login"
-              className="text-primary-600 hover:text-primary-500 font-medium"
-            >
+            <Link to="/login" className="text-primary-600 hover:text-primary-500 font-medium">
               立即登录
             </Link>
           </p>

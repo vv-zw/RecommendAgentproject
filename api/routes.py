@@ -12,7 +12,10 @@ from movie_recommendation.config import Config
 # ── 数据库连接 ────────────────────────────────────────────────────
 def get_conn():
     url = Config.get_database_url()
-    return psycopg.connect(url, row_factory=psycopg.rows.dict_row)
+    # autocommit=True 避免 context manager 自动 rollback
+    conn = psycopg.connect(url, row_factory=psycopg.rows.dict_row)
+    conn.autocommit = True
+    return conn
 
 SCHEMA = Config.PGSCHEMA
 SECRET_KEY = Config.SECRET_KEY
@@ -204,12 +207,9 @@ def register():
         return jsonify({"error": "Missing username, email, or password"}), 400
     from werkzeug.security import generate_password_hash
     try:
-        with get_conn() as conn:
+        conn = get_conn()
+        try:
             with conn.cursor() as cur:
-                cur.execute(f"""CREATE TABLE IF NOT EXISTS {SCHEMA}.users (
-                    id VARCHAR(36) PRIMARY KEY, username VARCHAR(100) UNIQUE NOT NULL,
-                    email VARCHAR(255) UNIQUE NOT NULL, password_hash VARCHAR(255) NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
                 cur.execute(f"SELECT id FROM {SCHEMA}.users WHERE username = %s", (username,))
                 if cur.fetchone():
                     return jsonify({"error": "Username already exists"}), 409
@@ -219,6 +219,8 @@ def register():
                     (user_id, username, email, generate_password_hash(password))
                 )
             conn.commit()
+        finally:
+            conn.close()
         return jsonify({"message": "User registered successfully", "user_id": user_id}), 201
     except Exception as e:
         print(f"Register error: {e}")
@@ -234,10 +236,13 @@ def login():
         return jsonify({"error": "Missing username or password"}), 400
     from werkzeug.security import check_password_hash
     try:
-        with get_conn() as conn:
+        conn = get_conn()
+        try:
             with conn.cursor() as cur:
                 cur.execute(f"SELECT * FROM {SCHEMA}.users WHERE username = %s", (username,))
                 user = cur.fetchone()
+        finally:
+            conn.close()
         if not user or not check_password_hash(user['password_hash'], password):
             return jsonify({"error": "Invalid username or password"}), 401
         token = jwt.encode(
