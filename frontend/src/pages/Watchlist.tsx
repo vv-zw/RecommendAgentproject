@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Bookmark, Eye, Trash2, Star, Calendar, LogIn } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Card from '../components/common/Card';
 import { CardContent } from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -9,6 +9,7 @@ import { contentApi, MediaItem } from '../api/content';
 import { useAuthStore } from '../store/authStore';
 
 const Watchlist: React.FC = () => {
+  const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
   const [watchlist, setWatchlist] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,7 +147,10 @@ const Watchlist: React.FC = () => {
         <div className="space-y-4">
           {watchlist.map((item) => (
             <Card key={item.id} hover className="overflow-hidden">
-              <div className="md:flex">
+              <div
+                className="md:flex cursor-pointer"
+                onClick={() => navigate(`/${item.media_type === 'movie' ? 'movie' : 'series'}/${item.id}`)}
+              >
                 {/* 海报 */}
                 <div className="md:w-1/4 flex-shrink-0">
                   <div className="relative h-48 md:h-full min-h-[160px]">

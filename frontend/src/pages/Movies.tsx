@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Film, Filter, SortAsc, Plus, ChevronLeft, ChevronRight, Info } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import MediaGrid from '../components/media/MediaGrid';
+import { Film, Filter, SortAsc, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import Card from '../components/common/Card';
+import { CardContent } from '../components/common/Card';
 import Button from '../components/common/Button';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import { contentApi, MediaItem } from '../api/content';
 import { useAuthStore } from '../store/authStore';
 
@@ -14,43 +16,36 @@ const SORT_OPTIONS = [
 ];
 
 const Movies: React.FC = () => {
+  const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
   const [movies, setMovies] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isFallback, setIsFallback] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [genre, setGenre] = useState('全部');
   const [sortBy, setSortBy] = useState('popularity.desc');
-  const [watchlistIds, setWatchlistIds] = useState<number[]>([]);
   const limit = 20;
 
-  // 获取电影列表：已登录调用偏好接口，未登录调用全量接口
   useEffect(() => {
     const fetchMovies = async () => {
       setLoading(true);
       setError(null);
       try {
-        const params = {
-          page,
-          limit,
-          sort_by: sortBy,
-          ...(genre !== '全部' ? { genre } : {}),
-        };
-
         if (isAuthenticated && user) {
-          // 已登录：调用偏好接口
-          const data = await contentApi.getPreferenceMovies(user.id, params);
+          // 已登录：展示用户影片库
+          const data = await contentApi.getLibraryMovies(user.id, { page, limit });
           setMovies(data.results);
           setTotal(data.total);
-          setIsFallback(data.is_fallback);
         } else {
-          // 未登录：调用全量接口
+          // 未登录：全量展示
+          const params = {
+            page, limit, sort_by: sortBy,
+            ...(genre !== '全部' ? { genre } : {}),
+          };
           const data = await contentApi.getMovies(params);
           setMovies(data.results);
           setTotal(data.total);
-          setIsFallback(false);
         }
       } catch (err) {
         console.error('获取电影列表失败:', err);
@@ -62,21 +57,39 @@ const Movies: React.FC = () => {
     fetchMovies();
   }, [page, genre, sortBy, isAuthenticated, user]);
 
-  // 获取待看清单 ID 列表
-  useEffect(() => {
-    if (!isAuthenticated || !user) return;
-    contentApi.getWatchlist(user.id)
-      .then(data => {
-        const ids = data.watchlist.map((item: MediaItem) => item.id);
-        setWatchlistIds(ids);
-      })
-      .catch(() => {});
-  }, [isAuthenticated, user]);
-
   const totalPages = Math.ceil(total / limit);
 
-  const handleAddToWatchlist = (id: number) => setWatchlistIds(prev => [...prev, id]);
-  const handleRemoveFromWatchlist = (id: number) => setWatchlistIds(prev => prev.filter(wid => wid !== id));
+  // 已登录但影片库为空
+  if (!loading && isAuthenticated && movies.length === 0 && !error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary-100 rounded-full">
+              <Film className="w-8 h-8 text-primary-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">我的电影库</h1>
+              <p className="text-gray-500 text-sm mt-1">您添加的电影收藏</p>
+            </div>
+          </div>
+          <Link to="/add-content">
+            <Button variant="primary"><Plus className="w-4 h-4 mr-2" />添加电影</Button>
+          </Link>
+        </div>
+        <Card>
+          <CardContent className="text-center py-16">
+            <Film className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">您的电影库还是空的</h3>
+            <p className="text-gray-600 mb-6">搜索并添加您喜欢的电影，建立专属影片库</p>
+            <Link to="/add-content">
+              <Button variant="primary"><Plus className="w-4 h-4 mr-2" />去添加电影</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -88,72 +101,52 @@ const Movies: React.FC = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              {isAuthenticated ? '我的电影推荐' : '电影库'}
+              {isAuthenticated ? '我的电影库' : '电影库'}
             </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              共 {total} 部电影
-              {isAuthenticated && !isFallback && ' · 基于您的偏好'}
-            </p>
+            <p className="text-gray-500 text-sm mt-1">共 {total} 部电影</p>
           </div>
         </div>
         <Link to="/add-content">
-          <Button variant="primary">
-            <Plus className="w-4 h-4 mr-2" />
-            添加影视
-          </Button>
+          <Button variant="primary"><Plus className="w-4 h-4 mr-2" />添加影视</Button>
         </Link>
       </div>
 
-      {/* 偏好兜底提示横幅 */}
-      {isAuthenticated && isFallback && (
-        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-blue-700">
-          <Info className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm">
-            暂未找到您的偏好记录，正在展示全部电影。
-            您可以通过 <Link to="/add-content" className="underline font-medium">添加影视</Link> 来建立您的偏好库。
-          </span>
+      {/* 未登录时显示筛选栏 */}
+      {!isAuthenticated && (
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <span className="text-sm text-gray-600 font-medium mr-1">类型：</span>
+            {GENRES.map(g => (
+              <button
+                key={g}
+                onClick={() => { setGenre(g); setPage(1); }}
+                className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                  genre === g ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <SortAsc className="w-4 h-4 text-gray-500" />
+            <span className="text-sm text-gray-600 font-medium mr-1">排序：</span>
+            {SORT_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => { setSortBy(opt.value); setPage(1); }}
+                className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                  sortBy === opt.value ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* 筛选栏 */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
-          <span className="text-sm text-gray-600 font-medium mr-1">类型：</span>
-          {GENRES.map(g => (
-            <button
-              key={g}
-              onClick={() => { setGenre(g); setPage(1); }}
-              className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                genre === g
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {g}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <SortAsc className="w-4 h-4 text-gray-500" />
-          <span className="text-sm text-gray-600 font-medium mr-1">排序：</span>
-          {SORT_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => { setSortBy(opt.value); setPage(1); }}
-              className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                sortBy === opt.value
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 错误提示 */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 flex items-center justify-between">
           <span>⚠️ {error}</span>
@@ -161,17 +154,48 @@ const Movies: React.FC = () => {
         </div>
       )}
 
-      {/* 电影网格 */}
-      <MediaGrid
-        items={movies}
-        loading={loading}
-        emptyMessage={isAuthenticated ? '暂无偏好相关电影' : '暂无电影数据'}
-        watchlistIds={watchlistIds}
-        onAddToWatchlist={handleAddToWatchlist}
-        onRemoveFromWatchlist={handleRemoveFromWatchlist}
-      />
+      {loading ? (
+        <div className="flex justify-center py-12"><LoadingSpinner size="lg" /></div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {movies.map((movie) => (
+            <div
+              key={movie.id}
+              onClick={() => navigate(`/movie/${movie.content_id || movie.id}`)}
+              className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
+            >
+              <div className="relative h-64 overflow-hidden bg-gray-200">
+                {movie.poster_path ? (
+                  <img
+                    src={movie.poster_path}
+                    alt={movie.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Film className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+                {movie.vote_average > 0 && (
+                  <div className="absolute top-3 right-3 bg-black/70 text-white px-2 py-1 rounded-full flex items-center gap-1 text-sm">
+                    ⭐ {movie.vote_average.toFixed(1)}
+                  </div>
+                )}
+              </div>
+              <div className="p-4">
+                <h3 className="font-semibold text-gray-900 truncate">{movie.title}</h3>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {movie.genres?.slice(0, 2).map((g, i) => (
+                    <span key={i} className="text-xs px-2 py-0.5 bg-primary-50 text-primary-600 rounded">{g}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* 分页 */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 pt-4">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>

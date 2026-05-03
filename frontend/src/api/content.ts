@@ -3,6 +3,7 @@ import api from './index';
 // ── 基础类型 ──────────────────────────────────────────────────────
 export interface MediaItem {
   id: number;
+  content_id?: string;  // 来自 user_preferences 的原始 content_items.id
   title: string;
   overview: string;
   poster_path: string;
@@ -63,6 +64,49 @@ export interface UserPreferencesResponse {
 
 export interface PreferenceMediaListResponse extends MediaListResponse {
   is_fallback: boolean;  // true 表示无偏好记录，返回的是全量兜底数据
+}
+
+// ── 影片库相关类型 ────────────────────────────────────────────────
+export interface LibraryAddRequest {
+  content_id: string;
+  content_type: 'movie' | 'series';
+  title: string;
+  genres?: string;
+  rating?: number;
+  year?: number;
+  director?: string;
+  actors?: string;
+  cover_url?: string;
+}
+
+export interface LibraryAddResponse {
+  message: string;
+  id: number | null;
+}
+
+export interface ReviewItem {
+  author: string;
+  content: string;
+  rating?: number;
+  date?: string;
+}
+
+export interface CastMember {
+  name: string;
+  role?: string;
+  avatar?: string;
+}
+
+export interface ContentDetail extends MediaItem {
+  original_title?: string;
+  episodes?: string;
+  status?: string;
+  raw_source?: {
+    reviews?: ReviewItem[];
+    cast?: CastMember[];
+    awards?: string[];
+    [key: string]: unknown;
+  };
 }
 
 // ── API 方法 ──────────────────────────────────────────────────────
@@ -193,6 +237,30 @@ export const contentApi = {
     genres?: string[];
   }) => {
     const response = await api.post<{ message: string; media_id: number }>('/content/add', data);
+    return response.data;
+  },
+
+  // 添加影片到用户影片库（写入 user_preferences）
+  addToLibrary: async (userId: number, data: LibraryAddRequest) => {
+    const response = await api.post<LibraryAddResponse>(`/users/${userId}/library`, data);
+    return response.data;
+  },
+
+  // 获取用户电影库
+  getLibraryMovies: async (userId: number, params?: { page?: number; limit?: number }) => {
+    const response = await api.get<MediaListResponse>(`/users/${userId}/library/movies`, { params });
+    return response.data;
+  },
+
+  // 获取用户剧集库
+  getLibrarySeries: async (userId: number, params?: { page?: number; limit?: number }) => {
+    const response = await api.get<MediaListResponse>(`/users/${userId}/library/series`, { params });
+    return response.data;
+  },
+
+  // 获取通用详情（含 raw_source 扩展字段）
+  getContentDetail: async (id: number) => {
+    const response = await api.get<ContentDetail>(`/content/${id}`);
     return response.data;
   },
 };

@@ -1,131 +1,121 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PlusCircle, Film, Tv, Star, CheckCircle, AlertCircle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Search, Film, Tv, CheckCircle, X, LogIn, PlusCircle, AlertCircle } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import { contentApi } from '../api/content';
-
-const GENRE_OPTIONS = [
-  '动作', '冒险', '科幻', '剧情', '喜剧', '恐怖', '动画',
-  '纪录片', '爱情', '悬疑', '惊悚', '奇幻', '历史', '犯罪',
-  '战争', '音乐', '传记', '家庭', '西部', '运动',
-];
-
-interface FormData {
-  title: string;
-  media_type: 'movie' | 'series';
-  overview: string;
-  release_date: string;
-  vote_average: string;
-  vote_count: string;
-  popularity: string;
-  poster_path: string;
-  backdrop_path: string;
-  genres: string[];
-}
-
-const initialForm: FormData = {
-  title: '',
-  media_type: 'movie',
-  overview: '',
-  release_date: '',
-  vote_average: '',
-  vote_count: '',
-  popularity: '',
-  poster_path: '',
-  backdrop_path: '',
-  genres: [],
-};
+import SearchResultCard from '../components/media/SearchResultCard';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import { contentApi, MediaItem } from '../api/content';
+import { useAuthStore } from '../store/authStore';
 
 const AddContent: React.FC = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState<FormData>(initialForm);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [submitMessage, setSubmitMessage] = useState('');
+  const { isAuthenticated, user } = useAuthStore();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    if (errors[name as keyof FormData]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+  const [query, setQuery] = useState('');
+  const [mediaType, setMediaType] = useState<'movie' | 'series'>('movie');
+  const [searchResults, setSearchResults] = useState<MediaItem[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [addStatus, setAddStatus] = useState<'idle' | 'success' | 'exists' | 'error'>('idle');
+  const [addMessage, setAddMessage] = useState('');
+
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 防抖搜索
+  const doSearch = useCallback(async (q: string, type: string) => {
+    if (!q.trim()) {
+      setSearchResults([]);
+      return;
     }
-  };
-
-  const toggleGenre = (genre: string) => {
-    setForm(prev => ({
-      ...prev,
-      genres: prev.genres.includes(genre)
-        ? prev.genres.filter(g => g !== genre)
-        : [...prev.genres, genre],
-    }));
-  };
-
-  const validate = (): boolean => {
-    const newErrors: Partial<Record<keyof FormData, string>> = {};
-
-    if (!form.title.trim()) newErrors.title = '请输入标题';
-    if (form.vote_average && (isNaN(Number(form.vote_average)) || Number(form.vote_average) < 0 || Number(form.vote_average) > 10)) {
-      newErrors.vote_average = '评分范围为 0 ~ 10';
-    }
-    if (form.vote_count && isNaN(Number(form.vote_count))) {
-      newErrors.vote_count = '请输入有效数字';
-    }
-    if (form.popularity && isNaN(Number(form.popularity))) {
-      newErrors.popularity = '请输入有效数字';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    setIsLoading(true);
-    setSubmitStatus('idle');
-
+    setSearching(true);
+    setSearchError(null);
     try {
-      const payload = {
-        title: form.title.trim(),
-        media_type: form.media_type,
-        overview: form.overview.trim(),
-        release_date: form.release_date || undefined,
-        vote_average: form.vote_average ? parseFloat(form.vote_average) : 0,
-        vote_count: form.vote_count ? parseInt(form.vote_count) : 0,
-        popularity: form.popularity ? parseFloat(form.popularity) : 0,
-        poster_path: form.poster_path.trim(),
-        backdrop_path: form.backdrop_path.trim(),
-        genres: form.genres,
-      };
-
-      await contentApi.addContent(payload);
-      setSubmitStatus('success');
-      setSubmitMessage(`《${form.title}》已成功添加到数据库！`);
-      setForm(initialForm);
-
-      // 3秒后跳转
-      setTimeout(() => {
-        navigate(form.media_type === 'movie' ? '/movies' : '/series');
-      }, 2500);
-    } catch (err: unknown) {
-      console.error('添加失败:', err);
-      const message = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || '添加失败，请稍后重试';
-      setSubmitStatus('error');
-      setSubmitMessage(message);
+      const data = await contentApi.searchMedia(q, { media_type: type, limit: 10 });
+      setSearchResults(data.results);
+    } catch {
+      setSearchError('搜索失败，请稍后重试');
     } finally {
-      setIsLoading(false);
+      setSearching(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      doSearch(query, mediaType);
+    }, 300);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [query, mediaType, doSearch]);
+
+  // 切换类型时清空选中
+  const handleTypeChange = (type: 'movie' | 'series') => {
+    setMediaType(type);
+    setSelectedItem(null);
+    setAddStatus('idle');
+  };
+
+  const handleSelectItem = (item: MediaItem) => {
+    setSelectedItem(item);
+    setAddStatus('idle');
+  };
+
+  const handleClearSelection = () => {
+    setSelectedItem(null);
+    setAddStatus('idle');
+  };
+
+  const handleConfirmAdd = async () => {
+    if (!selectedItem || !user) return;
+    setAdding(true);
+    setAddStatus('idle');
+    try {
+      const result = await contentApi.addToLibrary(user.id, {
+        content_id: String(selectedItem.id),
+        content_type: mediaType,
+        title: selectedItem.title,
+        genres: selectedItem.genres?.join('/') || '',
+        rating: selectedItem.vote_average,
+        year: selectedItem.release_date ? parseInt(selectedItem.release_date) : undefined,
+        director: selectedItem.director,
+        actors: selectedItem.actors,
+        cover_url: selectedItem.poster_path,
+      });
+      if (result.message.includes('已在')) {
+        setAddStatus('exists');
+      } else {
+        setAddStatus('success');
+      }
+      setAddMessage(result.message);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string } } };
+      setAddStatus('error');
+      setAddMessage(e.response?.data?.error || '添加失败，请稍后重试');
+    } finally {
+      setAdding(false);
     }
   };
 
-  const handleReset = () => {
-    setForm(initialForm);
-    setErrors({});
-    setSubmitStatus('idle');
-  };
+  // 未登录状态
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-2xl mx-auto py-12">
+        <Card className="p-8 text-center">
+          <LogIn className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">请先登录</h2>
+          <p className="text-gray-600 mb-6">登录后即可搜索并添加影视到您的个人影片库</p>
+          <div className="flex gap-4 justify-center">
+            <Link to="/login"><Button variant="primary">立即登录</Button></Link>
+            <Link to="/register"><Button variant="outline">注册账户</Button></Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -135,213 +125,192 @@ const AddContent: React.FC = () => {
           <PlusCircle className="w-8 h-8 text-green-600" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">添加影视内容</h1>
-          <p className="text-gray-500 text-sm mt-1">手动向数据库添加电影或剧集</p>
+          <h1 className="text-3xl font-bold text-gray-900">添加影视</h1>
+          <p className="text-gray-500 text-sm mt-1">搜索并添加影片到您的个人影片库</p>
         </div>
       </div>
 
-      {/* 成功/失败提示 */}
-      {submitStatus === 'success' && (
-        <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-4 text-green-700">
-          <CheckCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{submitMessage}</span>
-          <span className="ml-auto text-sm text-green-500">即将跳转...</span>
-        </div>
-      )}
-      {submitStatus === 'error' && (
-        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{submitMessage}</span>
-          <button onClick={() => setSubmitStatus('idle')} className="ml-auto">
-            <X className="w-4 h-4" />
+      {/* 搜索区 */}
+      <Card className="p-6 space-y-4">
+        {/* 类型选择 */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => handleTypeChange('movie')}
+            className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all ${
+              mediaType === 'movie'
+                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                : 'border-gray-200 hover:border-gray-300 text-gray-600'
+            }`}
+          >
+            <Film className="w-5 h-5" />
+            <span className="font-medium">电影</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTypeChange('series')}
+            className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all ${
+              mediaType === 'series'
+                ? 'border-secondary-500 bg-secondary-50 text-secondary-700'
+                : 'border-gray-200 hover:border-gray-300 text-gray-600'
+            }`}
+          >
+            <Tv className="w-5 h-5" />
+            <span className="font-medium">剧集</span>
           </button>
         </div>
-      )}
 
-      <form onSubmit={handleSubmit}>
-        <Card className="p-6 space-y-6">
-          {/* 类型选择 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">内容类型 *</label>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setForm(prev => ({ ...prev, media_type: 'movie' }))}
-                className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                  form.media_type === 'movie'
-                    ? 'border-primary-600 bg-primary-50 text-primary-700'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                }`}
-              >
-                <Film className="w-6 h-6" />
-                <span className="font-medium text-lg">电影</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setForm(prev => ({ ...prev, media_type: 'series' }))}
-                className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                  form.media_type === 'series'
-                    ? 'border-secondary-600 bg-secondary-50 text-secondary-700'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                }`}
-              >
-                <Tv className="w-6 h-6" />
-                <span className="font-medium text-lg">剧集</span>
-              </button>
-            </div>
+        {/* 搜索框 */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`搜索${mediaType === 'movie' ? '电影' : '剧集'}名称...`}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+          {query && (
+            <button
+              onClick={() => { setQuery(''); setSearchResults([]); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* 搜索状态 */}
+        {searching && (
+          <div className="flex justify-center py-4">
+            <LoadingSpinner size="sm" />
+          </div>
+        )}
+
+        {searchError && (
+          <p className="text-sm text-red-600 flex items-center gap-1">
+            <AlertCircle className="w-4 h-4" />{searchError}
+          </p>
+        )}
+
+        {/* 搜索结果 */}
+        {!searching && searchResults.length > 0 && (
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            <p className="text-sm text-gray-500">找到 {searchResults.length} 个结果，点击选择：</p>
+            {searchResults.map((item) => (
+              <SearchResultCard
+                key={item.id}
+                item={item}
+                isSelected={selectedItem?.id === item.id}
+                onClick={handleSelectItem}
+              />
+            ))}
+          </div>
+        )}
+
+        {!searching && query && searchResults.length === 0 && !searchError && (
+          <div className="text-center py-6 text-gray-500">
+            <Search className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+            <p>未找到匹配的{mediaType === 'movie' ? '电影' : '剧集'}</p>
+            <p className="text-sm mt-1">请尝试其他关键词</p>
+          </div>
+        )}
+      </Card>
+
+      {/* 预览面板 */}
+      {selectedItem && (
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">已选择影片</h3>
+            <button onClick={handleClearSelection} className="text-gray-400 hover:text-gray-600">
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* 基本信息 */}
-          <div className="space-y-4">
-            <h3 className="text-base font-semibold text-gray-800 border-b pb-2">基本信息</h3>
-
-            <Input
-              label="标题 *"
-              name="title"
-              value={form.title}
-              onChange={handleChange}
-              error={errors.title}
-              placeholder="请输入电影/剧集标题"
-            />
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">简介</label>
-              <textarea
-                name="overview"
-                value={form.overview}
-                onChange={handleChange}
-                rows={4}
-                placeholder="请输入内容简介..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-              />
-            </div>
-
-            <Input
-              label="上映日期"
-              name="release_date"
-              type="date"
-              value={form.release_date}
-              onChange={handleChange}
-            />
-          </div>
-
-          {/* 评分信息 */}
-          <div className="space-y-4">
-            <h3 className="text-base font-semibold text-gray-800 border-b pb-2 flex items-center gap-2">
-              <Star className="w-4 h-4 text-yellow-500" />
-              评分信息
-            </h3>
-            <div className="grid grid-cols-3 gap-4">
-              <Input
-                label="评分 (0-10)"
-                name="vote_average"
-                type="number"
-                value={form.vote_average}
-                onChange={handleChange}
-                error={errors.vote_average}
-                placeholder="如：8.5"
-              />
-              <Input
-                label="评分人数"
-                name="vote_count"
-                type="number"
-                value={form.vote_count}
-                onChange={handleChange}
-                error={errors.vote_count}
-                placeholder="如：10000"
-              />
-              <Input
-                label="热度"
-                name="popularity"
-                type="number"
-                value={form.popularity}
-                onChange={handleChange}
-                error={errors.popularity}
-                placeholder="如：9.2"
-              />
-            </div>
-          </div>
-
-          {/* 类型标签 */}
-          <div className="space-y-3">
-            <h3 className="text-base font-semibold text-gray-800 border-b pb-2">类型标签</h3>
-            <div className="flex flex-wrap gap-2">
-              {GENRE_OPTIONS.map(g => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => toggleGenre(g)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    form.genres.includes(g)
-                      ? 'bg-primary-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {form.genres.includes(g) && <span className="mr-1">✓</span>}
-                  {g}
-                </button>
-              ))}
-            </div>
-            {form.genres.length > 0 && (
-              <p className="text-sm text-gray-500">已选：{form.genres.join('、')}</p>
-            )}
-          </div>
-
-          {/* 图片链接 */}
-          <div className="space-y-4">
-            <h3 className="text-base font-semibold text-gray-800 border-b pb-2">图片链接（可选）</h3>
-            <Input
-              label="海报图片 URL"
-              name="poster_path"
-              value={form.poster_path}
-              onChange={handleChange}
-              placeholder="https://example.com/poster.jpg"
-            />
-            <Input
-              label="背景图片 URL"
-              name="backdrop_path"
-              value={form.backdrop_path}
-              onChange={handleChange}
-              placeholder="https://example.com/backdrop.jpg"
-            />
-
-            {/* 海报预览 */}
-            {form.poster_path && (
-              <div className="mt-2">
-                <p className="text-sm text-gray-500 mb-2">海报预览：</p>
+          <div className="flex gap-4">
+            {/* 封面 */}
+            <div className="flex-shrink-0 w-24 h-36 rounded-lg overflow-hidden bg-gray-200">
+              {selectedItem.poster_path ? (
                 <img
-                  src={form.poster_path}
-                  alt="海报预览"
-                  className="h-40 rounded-lg object-cover border border-gray-200"
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  src={selectedItem.poster_path}
+                  alt={selectedItem.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  <Film className="w-8 h-8" />
+                </div>
+              )}
+            </div>
+
+            {/* 信息 */}
+            <div className="flex-1 space-y-2">
+              <h4 className="text-xl font-bold text-gray-900">{selectedItem.title}</h4>
+              <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                {selectedItem.release_date && <span>📅 {selectedItem.release_date}</span>}
+                {selectedItem.vote_average > 0 && <span>⭐ {selectedItem.vote_average.toFixed(1)}</span>}
+                <span className="px-2 py-0.5 bg-gray-100 rounded">
+                  {selectedItem.media_type === 'movie' ? '电影' : '剧集'}
+                </span>
               </div>
-            )}
+              {selectedItem.genres && selectedItem.genres.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedItem.genres.map((g, i) => (
+                    <span key={i} className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded">{g}</span>
+                  ))}
+                </div>
+              )}
+              {selectedItem.overview && (
+                <p className="text-sm text-gray-600 line-clamp-2">{selectedItem.overview}</p>
+              )}
+            </div>
           </div>
+
+          {/* 添加状态提示 */}
+          {addStatus === 'success' && (
+            <div className="mt-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3 text-green-700">
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{addMessage}</span>
+              <button
+                className="ml-auto text-sm underline"
+                onClick={() => navigate(mediaType === 'movie' ? '/movies' : '/series')}
+              >
+                查看影片库
+              </button>
+            </div>
+          )}
+          {addStatus === 'exists' && (
+            <div className="mt-4 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-700">
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{addMessage}</span>
+            </div>
+          )}
+          {addStatus === 'error' && (
+            <div className="mt-4 flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{addMessage}</span>
+            </div>
+          )}
 
           {/* 操作按钮 */}
-          <div className="flex gap-4 pt-2">
+          <div className="flex gap-3 mt-4">
             <Button
-              type="submit"
               variant="primary"
               fullWidth
-              isLoading={isLoading}
-              disabled={isLoading || submitStatus === 'success'}
+              onClick={handleConfirmAdd}
+              isLoading={adding}
+              disabled={adding || addStatus === 'success'}
             >
               <PlusCircle className="w-4 h-4 mr-2" />
-              {isLoading ? '提交中...' : '添加到数据库'}
+              {addStatus === 'success' ? '已添加' : '确认添加到影片库'}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleReset}
-              disabled={isLoading}
-            >
-              重置
+            <Button variant="outline" onClick={handleClearSelection} disabled={adding}>
+              取消
             </Button>
           </div>
         </Card>
-      </form>
+      )}
     </div>
   );
 };

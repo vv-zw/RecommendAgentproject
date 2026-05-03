@@ -643,3 +643,213 @@ def chat(current_user):
     except Exception as e:
         print(f"Agent error: {e}")
         return jsonify({"error": "Agent execution failed", "detail": str(e)}), 500
+
+
+# ── 工具函数扩展 ──────────────────────────────────────────────────
+
+def content_item_to_media_detail(row: dict) -> dict:
+    """在 content_item_to_media 基础上追加详情页专用字段。"""
+    base = content_item_to_media(row)
+    base['original_title'] = row.get('original_title', '') or ''
+    base['episodes'] = row.get('episodes', '') or ''
+    base['status'] = row.get('status', '') or ''
+    base['raw_source'] = row.get('raw_source') or {}
+    return base
+
+
+def preference_to_media(row: dict) -> dict:
+    """将 user_preferences 行转换为前端 MediaItem 格式。"""
+    genres_raw = row.get('genres') or ''
+    if '/' in genres_raw:
+        genres_list = [g.strip() for g in genres_raw.split('/') if g.strip()]
+    elif ' ' in genres_raw:
+        genres_list = [g.strip() for g in genres_raw.split() if g.strip()]
+    else:
+        genres_list = [genres_raw.strip()] if genres_raw.strip() else []
+    return {
+        'id': row.get('id'),
+        'content_id': str(row.get('content_id', '')),
+        'title': row.get('title', ''),
+        'overview': '',
+        'poster_path': row.get('cover_url', '') or '',
+        'backdrop_path': row.get('cover_url', '') or '',
+        'release_date': str(row.get('year', '')) if row.get('year') else '',
+        'vote_average': float(row.get('rating', 0) or 0),
+        'vote_count': 0,
+        'media_type': row.get('content_type', 'movie'),
+        'genres': genres_list,
+        'popularity': 0.0,
+        'director': row.get('director', '') or '',
+        'actors': row.get('actors', '') or '',
+        'region': '',
+        'language': '',
+        'duration': '',
+        'added_at': row.get('created_at').isoformat() if row.get('created_at') else '',
+    }
+
+
+# ── 通用详情接口 ──────────────────────────────────────────────────
+
+@api_bp.route("/api/content/<int:content_id>", methods=["GET"])
+def get_content_detail(content_id):
+    """通用影视详情接口，返回完整字段含 raw_source JSONB 扩展字段。"""
+    try:
+        conn = get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT * FROM {SCHEMA}.content_items WHERE id = %s",
+                    (content_id,)
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+
+        if not row:
+            return jsonify({"error": "Content not found"}), 404
+
+        return jsonify(content_item_to_media_detail(row))
+    except Exception as e:
+        print(f"get_content_detail error: {e}")
+        return jsonify({"error": "Internal server error", "detail": str(e)}), 500
+
+
+# ── 用户影片库接口 ────────────────────────────────────────────────
+
+@api_bp.route("/api/users/<user_id>/library", methods=["POST"])
+@token_required
+def add_to_library(current_user, user_id):
+    """将影片添加到用户影片库（user_preferences），幂等处理。"""
+    if str(current_user['id']) != str(user_id):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json() or {}
+    content_id = str(data.get('content_id', '')).strip()
+    content_type = data.get('content_type', '')
+    title = (data.get('title') or '').strip()
+
+    if not all([content_id, content_type, title]):
+        return jsonify({"error": "Missing required fields: content_id, content_type, title"}), 400
+    if content_type not in ('movie', 'series'):
+        return jsonify({"error": "content_type must be 'movie' or 'series'"}), 400
+
+    try:
+        conn = get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""INSERT INTO {SCHEMA}.user_preferences
+                        (user_id, content_id, content_type, title, genres, rating,
+                         year, director, actors, cover_url, source)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'search')
+                        ON CONFLICT (user_id, content_id, content_type) DO NOTHING
+                        RETURNING id""",
+                    (
+                        user_id,
+                        content_id,
+                        content_type,
+                        title,
+                        data.get('genres', ''),
+                        float(data.get('rating', 0) or 0),
+                        int(data.get('year', 0) or 0) or None,
+                        data.get('director', ''),
+                        data.get('actors', ''),
+                        data.get('cover_url', ''),
+                    )
+                )
+                row = cur.fetchone()
+
+                if row:
+                    return jsonify({"message": "已加入您的影片库", "id": row['id']}), 201
+                else:
+                    # 幂等：已存在，查询现有记录 id
+                    cur.execute(
+                        f"SELECT id FROM {SCHEMA}.user_preferences "
+                        f"WHERE user_id = %s AND content_id = %s AND content_type = %s",
+                        (user_id, content_id, content_type)
+                    )
+                    existing = cur.fetchone()
+                    return jsonify({"message": "该影片已在您的影片库中", "id": existing['id'] if existing else None}), 200
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"add_to_library error: {e}")
+        return jsonify({"error": "Failed to add to library", "detail": str(e)}), 500
+
+
+@api_bp.route("/api/users/<user_id>/library/movies", methods=["GET"])
+@token_required
+def get_library_movies(current_user, user_id):
+    """获取用户电影库（user_preferences 中 content_type='movie' 的记录）。"""
+    if str(current_user['id']) != str(user_id):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    page  = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 20, type=int)
+    offset = (page - 1) * limit
+
+    try:
+        conn = get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT COUNT(*) as cnt FROM {SCHEMA}.user_preferences "
+                    f"WHERE user_id = %s AND content_type = 'movie'",
+                    (user_id,)
+                )
+                total = cur.fetchone()['cnt']
+
+                cur.execute(
+                    f"SELECT * FROM {SCHEMA}.user_preferences "
+                    f"WHERE user_id = %s AND content_type = 'movie' "
+                    f"ORDER BY created_at DESC LIMIT %s OFFSET %s",
+                    (user_id, limit, offset)
+                )
+                rows = cur.fetchall()
+                results = [preference_to_media(r) for r in rows]
+        finally:
+            conn.close()
+
+        return jsonify({"total": total, "page": page, "limit": limit, "results": results})
+    except Exception as e:
+        print(f"get_library_movies error: {e}")
+        return jsonify({"error": "Failed to fetch library movies", "detail": str(e)}), 500
+
+
+@api_bp.route("/api/users/<user_id>/library/series", methods=["GET"])
+@token_required
+def get_library_series(current_user, user_id):
+    """获取用户剧集库（user_preferences 中 content_type='series' 的记录）。"""
+    if str(current_user['id']) != str(user_id):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    page  = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 20, type=int)
+    offset = (page - 1) * limit
+
+    try:
+        conn = get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT COUNT(*) as cnt FROM {SCHEMA}.user_preferences "
+                    f"WHERE user_id = %s AND content_type = 'series'",
+                    (user_id,)
+                )
+                total = cur.fetchone()['cnt']
+
+                cur.execute(
+                    f"SELECT * FROM {SCHEMA}.user_preferences "
+                    f"WHERE user_id = %s AND content_type = 'series' "
+                    f"ORDER BY created_at DESC LIMIT %s OFFSET %s",
+                    (user_id, limit, offset)
+                )
+                rows = cur.fetchall()
+                results = [preference_to_media(r) for r in rows]
+        finally:
+            conn.close()
+
+        return jsonify({"total": total, "page": page, "limit": limit, "results": results})
+    except Exception as e:
+        print(f"get_library_series error: {e}")
+        return jsonify({"error": "Failed to fetch library series", "detail": str(e)}), 500
