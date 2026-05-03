@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Film, Filter, SortAsc, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Film, Filter, SortAsc, Plus, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import MediaGrid from '../components/media/MediaGrid';
 import Button from '../components/common/Button';
@@ -18,6 +18,7 @@ const Movies: React.FC = () => {
   const [movies, setMovies] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFallback, setIsFallback] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [genre, setGenre] = useState('全部');
@@ -25,18 +26,32 @@ const Movies: React.FC = () => {
   const [watchlistIds, setWatchlistIds] = useState<number[]>([]);
   const limit = 20;
 
-  // 获取电影列表
+  // 获取电影列表：已登录调用偏好接口，未登录调用全量接口
   useEffect(() => {
     const fetchMovies = async () => {
       setLoading(true);
       setError(null);
       try {
-        const params: Record<string, unknown> = { page, limit, sort_by: sortBy };
-        if (genre !== '全部') params.genre = genre;
+        const params = {
+          page,
+          limit,
+          sort_by: sortBy,
+          ...(genre !== '全部' ? { genre } : {}),
+        };
 
-        const data = await contentApi.getMovies(params as Parameters<typeof contentApi.getMovies>[0]);
-        setMovies(data.results);
-        setTotal(data.total);
+        if (isAuthenticated && user) {
+          // 已登录：调用偏好接口
+          const data = await contentApi.getPreferenceMovies(user.id, params);
+          setMovies(data.results);
+          setTotal(data.total);
+          setIsFallback(data.is_fallback);
+        } else {
+          // 未登录：调用全量接口
+          const data = await contentApi.getMovies(params);
+          setMovies(data.results);
+          setTotal(data.total);
+          setIsFallback(false);
+        }
       } catch (err) {
         console.error('获取电影列表失败:', err);
         setError('获取电影列表失败，请检查后端服务是否启动');
@@ -45,14 +60,14 @@ const Movies: React.FC = () => {
       }
     };
     fetchMovies();
-  }, [page, genre, sortBy]);
+  }, [page, genre, sortBy, isAuthenticated, user]);
 
-  // 获取待看清单
+  // 获取待看清单 ID 列表
   useEffect(() => {
     if (!isAuthenticated || !user) return;
     contentApi.getWatchlist(user.id)
       .then(data => {
-        const ids = data.watchlist.map((item: { media_id: number }) => item.media_id);
+        const ids = data.watchlist.map((item: MediaItem) => item.id);
         setWatchlistIds(ids);
       })
       .catch(() => {});
@@ -60,12 +75,8 @@ const Movies: React.FC = () => {
 
   const totalPages = Math.ceil(total / limit);
 
-  const handleAddToWatchlist = (id: number) => {
-    setWatchlistIds(prev => [...prev, id]);
-  };
-  const handleRemoveFromWatchlist = (id: number) => {
-    setWatchlistIds(prev => prev.filter(wid => wid !== id));
-  };
+  const handleAddToWatchlist = (id: number) => setWatchlistIds(prev => [...prev, id]);
+  const handleRemoveFromWatchlist = (id: number) => setWatchlistIds(prev => prev.filter(wid => wid !== id));
 
   return (
     <div className="space-y-6">
@@ -76,8 +87,13 @@ const Movies: React.FC = () => {
             <Film className="w-8 h-8 text-primary-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">电影库</h1>
-            <p className="text-gray-500 text-sm mt-1">共 {total} 部电影</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isAuthenticated ? '我的电影推荐' : '电影库'}
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">
+              共 {total} 部电影
+              {isAuthenticated && !isFallback && ' · 基于您的偏好'}
+            </p>
           </div>
         </div>
         <Link to="/add-content">
@@ -88,9 +104,19 @@ const Movies: React.FC = () => {
         </Link>
       </div>
 
+      {/* 偏好兜底提示横幅 */}
+      {isAuthenticated && isFallback && (
+        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-blue-700">
+          <Info className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm">
+            暂未找到您的偏好记录，正在展示全部电影。
+            您可以通过 <Link to="/add-content" className="underline font-medium">添加影视</Link> 来建立您的偏好库。
+          </span>
+        </div>
+      )}
+
       {/* 筛选栏 */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
-        {/* 类型筛选 */}
         <div className="flex items-center gap-2 flex-wrap">
           <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
           <span className="text-sm text-gray-600 font-medium mr-1">类型：</span>
@@ -108,8 +134,6 @@ const Movies: React.FC = () => {
             </button>
           ))}
         </div>
-
-        {/* 排序 */}
         <div className="flex items-center gap-2">
           <SortAsc className="w-4 h-4 text-gray-500" />
           <span className="text-sm text-gray-600 font-medium mr-1">排序：</span>
@@ -131,8 +155,9 @@ const Movies: React.FC = () => {
 
       {/* 错误提示 */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
-          ⚠️ {error}
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 flex items-center justify-between">
+          <span>⚠️ {error}</span>
+          <Button variant="outline" size="sm" onClick={() => setPage(p => p)}>重试</Button>
         </div>
       )}
 
@@ -140,7 +165,7 @@ const Movies: React.FC = () => {
       <MediaGrid
         items={movies}
         loading={loading}
-        emptyMessage="暂无电影数据"
+        emptyMessage={isAuthenticated ? '暂无偏好相关电影' : '暂无电影数据'}
         watchlistIds={watchlistIds}
         onAddToWatchlist={handleAddToWatchlist}
         onRemoveFromWatchlist={handleRemoveFromWatchlist}
@@ -149,26 +174,12 @@ const Movies: React.FC = () => {
       {/* 分页 */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 pt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage(p => p - 1)}
-          >
-            <ChevronLeft className="w-4 h-4" />
-            上一页
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+            <ChevronLeft className="w-4 h-4" />上一页
           </Button>
-          <span className="text-gray-600 text-sm">
-            第 {page} / {totalPages} 页
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => setPage(p => p + 1)}
-          >
-            下一页
-            <ChevronRight className="w-4 h-4" />
+          <span className="text-gray-600 text-sm">第 {page} / {totalPages} 页</span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+            下一页<ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       )}

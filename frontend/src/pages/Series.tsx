@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tv, Filter, SortAsc, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Tv, Filter, SortAsc, Plus, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import MediaGrid from '../components/media/MediaGrid';
 import Button from '../components/common/Button';
@@ -18,6 +18,7 @@ const Series: React.FC = () => {
   const [series, setSeries] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFallback, setIsFallback] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [genre, setGenre] = useState('全部');
@@ -25,17 +26,30 @@ const Series: React.FC = () => {
   const [watchlistIds, setWatchlistIds] = useState<number[]>([]);
   const limit = 20;
 
+  // 获取剧集列表：已登录调用偏好接口，未登录调用全量接口
   useEffect(() => {
     const fetchSeries = async () => {
       setLoading(true);
       setError(null);
       try {
-        const params: Record<string, unknown> = { page, limit, sort_by: sortBy };
-        if (genre !== '全部') params.genre = genre;
+        const params = {
+          page,
+          limit,
+          sort_by: sortBy,
+          ...(genre !== '全部' ? { genre } : {}),
+        };
 
-        const data = await contentApi.getSeries(params as Parameters<typeof contentApi.getSeries>[0]);
-        setSeries(data.results);
-        setTotal(data.total);
+        if (isAuthenticated && user) {
+          const data = await contentApi.getPreferenceSeries(user.id, params);
+          setSeries(data.results);
+          setTotal(data.total);
+          setIsFallback(data.is_fallback);
+        } else {
+          const data = await contentApi.getSeries(params);
+          setSeries(data.results);
+          setTotal(data.total);
+          setIsFallback(false);
+        }
       } catch (err) {
         console.error('获取剧集列表失败:', err);
         setError('获取剧集列表失败，请检查后端服务是否启动');
@@ -44,13 +58,14 @@ const Series: React.FC = () => {
       }
     };
     fetchSeries();
-  }, [page, genre, sortBy]);
+  }, [page, genre, sortBy, isAuthenticated, user]);
 
+  // 获取待看清单 ID 列表
   useEffect(() => {
     if (!isAuthenticated || !user) return;
     contentApi.getWatchlist(user.id)
       .then(data => {
-        const ids = data.watchlist.map((item: { media_id: number }) => item.media_id);
+        const ids = data.watchlist.map((item: MediaItem) => item.id);
         setWatchlistIds(ids);
       })
       .catch(() => {});
@@ -70,8 +85,13 @@ const Series: React.FC = () => {
             <Tv className="w-8 h-8 text-secondary-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">剧集库</h1>
-            <p className="text-gray-500 text-sm mt-1">共 {total} 部剧集</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isAuthenticated ? '我的剧集推荐' : '剧集库'}
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">
+              共 {total} 部剧集
+              {isAuthenticated && !isFallback && ' · 基于您的偏好'}
+            </p>
           </div>
         </div>
         <Link to="/add-content">
@@ -81,6 +101,17 @@ const Series: React.FC = () => {
           </Button>
         </Link>
       </div>
+
+      {/* 偏好兜底提示横幅 */}
+      {isAuthenticated && isFallback && (
+        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-blue-700">
+          <Info className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm">
+            暂未找到您的偏好记录，正在展示全部剧集。
+            您可以通过 <Link to="/add-content" className="underline font-medium">添加影视</Link> 来建立您的偏好库。
+          </span>
+        </div>
+      )}
 
       {/* 筛选栏 */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
@@ -120,16 +151,18 @@ const Series: React.FC = () => {
         </div>
       </div>
 
+      {/* 错误提示 */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
-          ⚠️ {error}
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 flex items-center justify-between">
+          <span>⚠️ {error}</span>
+          <Button variant="outline" size="sm" onClick={() => setPage(p => p)}>重试</Button>
         </div>
       )}
 
       <MediaGrid
         items={series}
         loading={loading}
-        emptyMessage="暂无剧集数据"
+        emptyMessage={isAuthenticated ? '暂无偏好相关剧集' : '暂无剧集数据'}
         watchlistIds={watchlistIds}
         onAddToWatchlist={handleAddToWatchlist}
         onRemoveFromWatchlist={handleRemoveFromWatchlist}
