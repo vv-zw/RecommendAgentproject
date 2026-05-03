@@ -78,3 +78,55 @@ class ContentRepository:
         finally:
             cursor.close()
             conn.close()
+
+    def add_media_item(self, title, media_type, overview='', release_date=None,
+                       vote_average=0.0, vote_count=0, popularity=0.0,
+                       poster_path='', backdrop_path='', genres=None):
+        """手动添加一条影视记录，返回新记录的 id"""
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                """INSERT INTO `media_items`
+                   (title, media_type, overview, release_date,
+                    vote_average, vote_count, popularity,
+                    poster_path, backdrop_path)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (title, media_type, overview, release_date or None,
+                 vote_average, vote_count, popularity,
+                 poster_path, backdrop_path)
+            )
+            media_id = cursor.lastrowid
+
+            # 处理 genres（字符串列表）
+            if genres:
+                for genre_name in genres:
+                    genre_name = genre_name.strip()
+                    if not genre_name:
+                        continue
+                    # 查找或创建 genre
+                    cursor.execute(
+                        "SELECT id FROM `genres` WHERE name = %s", (genre_name,)
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        genre_id = row['id']
+                    else:
+                        cursor.execute(
+                            "INSERT INTO `genres` (name) VALUES (%s)", (genre_name,)
+                        )
+                        genre_id = cursor.lastrowid
+                    # 关联
+                    cursor.execute(
+                        "INSERT IGNORE INTO `media_genres` (media_id, genre_id) VALUES (%s, %s)",
+                        (media_id, genre_id)
+                    )
+
+            conn.commit()
+            return media_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            cursor.close()
+            conn.close()

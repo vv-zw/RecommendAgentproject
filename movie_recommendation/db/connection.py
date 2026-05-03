@@ -1,27 +1,16 @@
-import pymysql
-from ai_config import settings
-from urllib.parse import urlparse
+import psycopg
+import psycopg.rows
+from movie_recommendation.config import Config
+
 
 def get_db_connection():
-    """Establishes a connection to the MySQL database using PyMySQL."""
-    if not settings.DATABASE_URL:
+    """Establishes a connection to the PostgreSQL database using psycopg3."""
+    url = Config.get_database_url()
+    if not url:
         raise RuntimeError("DATABASE_URL is not configured in the environment.")
+    return psycopg.connect(url, row_factory=psycopg.rows.dict_row)
 
-    try:
-        url = urlparse(settings.DATABASE_URL)
-        connection = pymysql.connect(
-            host=url.hostname,
-            user=url.username,
-            password=url.password,
-            database=url.path[1:], # Remove leading '/'
-            port=url.port or 3306,
-            cursorclass=pymysql.cursors.DictCursor # Return rows as dictionaries
-        )
-        return connection
-    except pymysql.MySQLError as err:
-        print(f"Error connecting to database: {err}")
-        raise RuntimeError("Failed to connect to the database.") from err
 
 def is_database_enabled() -> bool:
     """Checks if the database URL is configured."""
-    return bool(settings.DATABASE_URL)
+    return bool(Config.get_database_url())
