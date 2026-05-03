@@ -2,7 +2,7 @@ import React from 'react';
 import { Bookmark, Eye, Trash2 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import { CardHeader, CardContent } from '../components/common/Card';
+import { CardContent } from '../components/common/Card';
 
 const Watchlist: React.FC = () => {
   // 这里应该是从API获取的数据

@@ -7,6 +7,7 @@ import Movies from './pages/Movies';
 import Series from './pages/Series';
 import Watchlist from './pages/Watchlist';
 import AgentAssistant from './pages/AgentAssistant';
+import AddContent from './pages/AddContent';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -31,6 +32,7 @@ const App: React.FC = () => {
             <Route path="/series" element={<Series />} />
             <Route path="/watchlist" element={<Watchlist />} />
             <Route path="/agent" element={<AgentAssistant />} />
+            <Route path="/add-content" element={<AddContent />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
           </Routes>

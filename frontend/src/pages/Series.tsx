@@ -1,42 +1,69 @@
-import React from 'react';
-import { Tv } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Tv, Filter, SortAsc, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import MediaGrid from '../components/media/MediaGrid';
 import Button from '../components/common/Button';
+import { contentApi, MediaItem } from '../api/content';
+import { useAuthStore } from '../store/authStore';
+
+const GENRES = ['全部', '剧情', '喜剧', '爱情', '悬疑', '惊悚', '科幻', '奇幻', '动作', '历史', '犯罪', '动画'];
+const SORT_OPTIONS = [
+  { label: '热度排序', value: 'popularity.desc' },
+  { label: '评分排序', value: 'vote_average.desc' },
+  { label: '最新上映', value: 'release_date.desc' },
+];
 
 const Series: React.FC = () => {
-  // 这里应该是从API获取的数据
-  const mockSeries = [
-    {
-      id: 1,
-      title: '权力的游戏',
-      overview: '在维斯特洛大陆上，七个王国为争夺铁王座而展开激烈的权力斗争。',
-      poster_path: '/placeholder.jpg',
-      backdrop_path: '/placeholder.jpg',
-      release_date: '2011-04-17',
-      vote_average: 8.9,
-      vote_count: 20000,
-      media_type: 'series',
-      genres: ['奇幻', '剧情', '冒险'],
-      popularity: 9.5,
-    },
-    {
-      id: 2,
-      title: '怪奇物语',
-      overview: '一个小镇上的男孩神秘失踪，他的朋友、家人和当地警察在寻找答案时发现了超自然力量。',
-      poster_path: '/placeholder.jpg',
-      backdrop_path: '/placeholder.jpg',
-      release_date: '2016-07-15',
-      vote_average: 8.7,
-      vote_count: 18000,
-      media_type: 'series',
-      genres: ['科幻', '恐怖', '剧情'],
-      popularity: 8.8,
-    },
-    // 可以添加更多模拟数据
-  ];
+  const { isAuthenticated, user } = useAuthStore();
+  const [series, setSeries] = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [genre, setGenre] = useState('全部');
+  const [sortBy, setSortBy] = useState('popularity.desc');
+  const [watchlistIds, setWatchlistIds] = useState<number[]>([]);
+  const limit = 20;
+
+  useEffect(() => {
+    const fetchSeries = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params: Record<string, unknown> = { page, limit, sort_by: sortBy };
+        if (genre !== '全部') params.genre = genre;
+
+        const data = await contentApi.getSeries(params as Parameters<typeof contentApi.getSeries>[0]);
+        setSeries(data.results);
+        setTotal(data.total);
+      } catch (err) {
+        console.error('获取剧集列表失败:', err);
+        setError('获取剧集列表失败，请检查后端服务是否启动');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSeries();
+  }, [page, genre, sortBy]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    contentApi.getWatchlist(user.id)
+      .then(data => {
+        const ids = data.watchlist.map((item: { media_id: number }) => item.media_id);
+        setWatchlistIds(ids);
+      })
+      .catch(() => {});
+  }, [isAuthenticated, user]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  const handleAddToWatchlist = (id: number) => setWatchlistIds(prev => [...prev, id]);
+  const handleRemoveFromWatchlist = (id: number) => setWatchlistIds(prev => prev.filter(wid => wid !== id));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* 页头 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-secondary-100 rounded-full">
@@ -44,21 +71,81 @@ const Series: React.FC = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">剧集库</h1>
-            <p className="text-gray-600">发现精彩电视剧集</p>
+            <p className="text-gray-500 text-sm mt-1">共 {total} 部剧集</p>
           </div>
         </div>
-        
-        <div className="flex gap-2">
-          <Button variant="outline">筛选</Button>
-          <Button variant="secondary">排序</Button>
+        <Link to="/add-content">
+          <Button variant="secondary">
+            <Plus className="w-4 h-4 mr-2" />
+            添加影视
+          </Button>
+        </Link>
+      </div>
+
+      {/* 筛选栏 */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
+          <span className="text-sm text-gray-600 font-medium mr-1">类型：</span>
+          {GENRES.map(g => (
+            <button
+              key={g}
+              onClick={() => { setGenre(g); setPage(1); }}
+              className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                genre === g
+                  ? 'bg-secondary-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <SortAsc className="w-4 h-4 text-gray-500" />
+          <span className="text-sm text-gray-600 font-medium mr-1">排序：</span>
+          {SORT_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => { setSortBy(opt.value); setPage(1); }}
+              className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                sortBy === opt.value
+                  ? 'bg-secondary-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+          ⚠️ {error}
+        </div>
+      )}
+
       <MediaGrid
-        items={mockSeries}
+        items={series}
+        loading={loading}
         emptyMessage="暂无剧集数据"
-        type="series"
+        watchlistIds={watchlistIds}
+        onAddToWatchlist={handleAddToWatchlist}
+        onRemoveFromWatchlist={handleRemoveFromWatchlist}
       />
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 pt-4">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+            <ChevronLeft className="w-4 h-4" />上一页
+          </Button>
+          <span className="text-gray-600 text-sm">第 {page} / {totalPages} 页</span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+            下一页<ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

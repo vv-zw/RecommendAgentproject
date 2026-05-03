@@ -111,4 +111,21 @@ export const contentApi = {
     const response = await api.post(`/users/${userId}/history`, { media_id: mediaId });
     return response.data;
   },
+
+  // 手动添加影视内容
+  addContent: async (data: {
+    title: string;
+    media_type: 'movie' | 'series';
+    overview?: string;
+    release_date?: string;
+    vote_average?: number;
+    vote_count?: number;
+    popularity?: number;
+    poster_path?: string;
+    backdrop_path?: string;
+    genres?: string[];
+  }) => {
+    const response = await api.post<{ message: string; media_id: number }>('/content/add', data);
+    return response.data;
+  },
 };

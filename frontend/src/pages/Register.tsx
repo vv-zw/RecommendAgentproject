@@ -68,12 +68,6 @@ const Register: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await authApi.register({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-      });
-      
       // 注册成功后自动登录
       const loginResponse = await authApi.login({
         username: formData.username,

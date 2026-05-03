@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Film, Search, User, LogOut, Menu, X, Bot } from 'lucide-react';
+import { Film, Search, User, LogOut, Menu, X, Bot, PlusCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import Button from '../common/Button';
 import { useUIStore } from '../../store/uiStore';
@@ -16,6 +16,7 @@ const Header: React.FC = () => {
     { name: '剧集', path: '/series' },
     { name: '待看清单', path: '/watchlist' },
     { name: 'AI助手', path: '/agent', icon: <Bot className="w-4 h-4" /> },
+    { name: '添加影视', path: '/add-content', icon: <PlusCircle className="w-4 h-4" /> },
   ];
 
   const handleLogout = () => {
