@@ -613,8 +613,9 @@ def get_user_preferences(current_user, user_id):
 @api_bp.route("/api/agent/chat", methods=["POST"])
 @token_required
 def chat(current_user):
-    data    = request.get_json() or {}
-    message = (data.get('message') or '').strip()
+    data       = request.get_json() or {}
+    message    = (data.get('message') or '').strip()
+    session_id = data.get('session_id')  # 多轮对话 session ID，None 时自动创建
     if not message:
         return jsonify({"error": "Message is required"}), 400
 
@@ -636,10 +637,18 @@ def chat(current_user):
     try:
         from agent.recommendation_agent import AgentManager
         agent = AgentManager()
-        nl_response, structured_results = agent.process_user_request(
-            current_user['id'], message, preference_context
+        nl_response, structured_results, out_session_id = agent.process_user_request(
+            user_id=current_user['id'],
+            user_message=message,
+            preference_context=preference_context,
+            session_id=session_id,
+            stream=False,
         )
-        return jsonify({"nl_response": nl_response, "structured_results": structured_results})
+        return jsonify({
+            "nl_response": nl_response,
+            "structured_results": structured_results,
+            "session_id": out_session_id,
+        })
     except Exception as e:
         print(f"Agent error: {e}")
         return jsonify({"error": "Agent execution failed", "detail": str(e)}), 500
