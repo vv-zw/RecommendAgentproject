@@ -5,7 +5,10 @@ ResponseGenerator：使用 LLM 生成自然语言回复。
 """
 import json
 import logging
+import os
 from typing import Generator, Optional, Union
+
+import requests as req
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +46,6 @@ class ResponseGenerator:
             stream=False: 完整回复字符串
             stream=True: token 生成器
         """
-        try:
-            from ai_config.llm_client import chat_completion
-        except ImportError as e:
-            logger.error(f"LLM 客户端导入失败：{e}")
-            return self._fallback_response(tool_results, preference_context)
-
         # 构建偏好摘要
         pref_summary = self._build_preference_summary(preference_context)
 
@@ -70,29 +67,71 @@ class ResponseGenerator:
 
         gen_messages.append({"role": "user", "content": context_content})
 
-        try:
-            response = chat_completion(
-                messages=gen_messages,
-                temperature=0.7,
-                max_tokens=512,
-                stream=stream,
-            )
-
-            if stream:
-                return self._stream_generator(response)
-            else:
+        if stream:
+            # 流式模式：用 requests 直接调用，绕过 httpx 在 Windows 下的流式问题
+            return self._stream_with_requests(gen_messages)
+        else:
+            # 普通模式：用 openai SDK
+            try:
+                from ai_config.llm_client import chat_completion
+                response = chat_completion(
+                    messages=gen_messages,
+                    temperature=0.7,
+                    max_tokens=512,
+                    stream=False,
+                )
                 return response.choices[0].message.content.strip()
+            except Exception as e:
+                logger.error(f"ResponseGenerator LLM 调用失败，降级处理：{e}")
+                return self._fallback_response(tool_results, preference_context)
 
+    def _stream_with_requests(self, messages: list) -> Generator:
+        """
+        用 requests 库直接调用 DeepSeek 流式 API。
+        绕过 httpx 在某些 Windows 网络环境下的流式连接问题。
+        """
+        api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        provider = os.environ.get("LLM_PROVIDER", "deepseek")
+        model = os.environ.get("LLM_MODEL", "deepseek-chat")
+
+        if provider == "deepseek":
+            url = "https://api.deepseek.com/chat/completions"
+        else:
+            url = "https://api.openai.com/v1/chat/completions"
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 512,
+            "stream": True,
+        }
+
+        try:
+            with req.post(url, headers=headers, json=payload, stream=True, timeout=60) as resp:
+                resp.raise_for_status()
+                for line in resp.iter_lines():
+                    if not line:
+                        continue
+                    line_str = line.decode("utf-8") if isinstance(line, bytes) else line
+                    if line_str.startswith("data:"):
+                        data = line_str[5:].strip()
+                        if data == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data)
+                            content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                            if content:
+                                yield content
+                        except json.JSONDecodeError:
+                            continue
         except Exception as e:
-            logger.error(f"ResponseGenerator LLM 调用失败，降级处理：{e}")
-            return self._fallback_response(tool_results, preference_context)
-
-    def _stream_generator(self, response) -> Generator:
-        """将 LLM 流式响应转换为 token 生成器。"""
-        for chunk in response:
-            delta = chunk.choices[0].delta
-            if delta.content:
-                yield delta.content
+            logger.error(f"requests 流式调用失败：{e}")
+            yield self._fallback_response([], None)
 
     def _build_results_summary(self, tool_results: list) -> str:
         """将推荐结果列表转换为简洁的 JSON 摘要（只保留关键字段）。"""
@@ -108,7 +147,7 @@ class ResponseGenerator:
                 "genres": item.get("genres", []),
                 "vote_average": item.get("vote_average"),
                 "director": item.get("director", ""),
-                "overview": (item.get("overview") or "")[:100],  # 简介截断
+                "overview": (item.get("overview") or "")[:100],
             })
         return json.dumps(summary, ensure_ascii=False)
 

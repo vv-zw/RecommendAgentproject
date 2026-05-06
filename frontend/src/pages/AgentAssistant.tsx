@@ -6,7 +6,6 @@ import RecommendationCard from '../components/agent/RecommendationCard';
 import { agentApi } from '../api/agent';
 import { contentApi, UserPreference, MediaItem } from '../api/content';
 import { useAuthStore } from '../store/authStore';
-
 // 默认快捷词条（未登录或偏好加载失败时使用）
 const DEFAULT_QUICK_PROMPTS = [
   '推荐类似流浪地球的电影',
@@ -64,6 +63,8 @@ const AgentAssistant: React.FC = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const streamControllerRef = useRef<AbortController | null>(null);
+  const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null);
 
   // 加载用户偏好，生成个性化快捷词条
   useEffect(() => {
@@ -94,6 +95,11 @@ const AgentAssistant: React.FC = () => {
   }, [messages, scrollToBottom]);
 
   const handleSendMessage = async (message: string) => {
+    // 取消上一次未完成的流
+    if (streamControllerRef.current) {
+      streamControllerRef.current.abort();
+    }
+
     const userMsg: ChatMessage = {
       id: `u-${Date.now()}`,
       content: message,
@@ -101,58 +107,74 @@ const AgentAssistant: React.FC = () => {
       timestamp: new Date(),
     };
     const thinkingId = `t-${Date.now()}`;
-    const thinkingMsg: ChatMessage = {
+    const aiMsgId = `a-${Date.now()}`;
+
+    setMessages(prev => [...prev, userMsg, {
       id: thinkingId,
       content: '',
       isUser: false,
       timestamp: new Date(),
       isLoading: true,
-    };
-
-    setMessages(prev => [...prev, userMsg, thinkingMsg]);
+    }]);
     setIsLoading(true);
 
-    try {
-      const response = await agentApi.chat(message, sessionId ?? undefined);
-
-      // 保存 session_id 用于多轮对话
-      if (response.session_id) {
-        setSessionId(response.session_id);
-      }
-
-      setMessages(prev => [
-        ...prev.filter(m => m.id !== thinkingId),
-        {
-          id: `a-${Date.now()}`,
-          content: response.nl_response,
-          isUser: false,
-          timestamp: new Date(),
+    // 用 SSE 流式模式
+    const controller = agentApi.chatStream(
+      message,
+      {
+        onMeta: (newSessionId, results) => {
+          // 收到 meta 帧：保存 session_id，更新推荐结果，把 loading 气泡换成空的 AI 气泡
+          if (newSessionId) setSessionId(newSessionId);
+          if (results?.length > 0) setRecommendations(results);
+          setMessages(prev => [
+            ...prev.filter(m => m.id !== thinkingId),
+            { id: aiMsgId, content: '', isUser: false, timestamp: new Date() },
+          ]);
+          setStreamingMsgId(aiMsgId);
         },
-      ]);
-
-      if (response.structured_results?.length > 0) {
-        setRecommendations(response.structured_results);
-      }
-    } catch (error) {
-      console.error('AI 对话失败:', error);
-      setMessages(prev => [
-        ...prev.filter(m => m.id !== thinkingId),
-        {
-          id: `e-${Date.now()}`,
-          content: '抱歉，处理您的请求时出现了问题，请稍后重试。',
-          isUser: false,
-          timestamp: new Date(),
+        onToken: (token) => {
+          // 逐字追加到 AI 气泡
+          setMessages(prev => prev.map(m =>
+            m.id === aiMsgId ? { ...m, content: m.content + token } : m
+          ));
         },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
+        onDone: () => {
+          setIsLoading(false);
+          setStreamingMsgId(null);
+          streamControllerRef.current = null;
+        },
+        onError: (err) => {
+          console.error('SSE 错误:', err);
+          setMessages(prev => [
+            ...prev.filter(m => m.id !== thinkingId && m.id !== aiMsgId),
+            {
+              id: `e-${Date.now()}`,
+              content: '抱歉，处理您的请求时出现了问题，请稍后重试。',
+              isUser: false,
+              timestamp: new Date(),
+            },
+          ]);
+          setIsLoading(false);
+          setStreamingMsgId(null);
+          streamControllerRef.current = null;
+        },
+      },
+      sessionId ?? undefined,
+    );
+
+    streamControllerRef.current = controller;
   };
 
   const handleClearChat = () => {
+    if (streamControllerRef.current) {
+      streamControllerRef.current.abort();
+      streamControllerRef.current = null;
+    }
     setMessages([WELCOME_MESSAGE]);
     setRecommendations([]);
     setSessionId(null);
+    setIsLoading(false);
+    setStreamingMsgId(null);
   };
 
   return (
@@ -197,6 +219,7 @@ const AgentAssistant: React.FC = () => {
                 isUser={msg.isUser}
                 timestamp={msg.timestamp}
                 isLoading={msg.isLoading}
+                isStreaming={msg.id === streamingMsgId}
               />
             ))}
             <div ref={messagesEndRef} />

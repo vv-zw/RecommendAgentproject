@@ -8,6 +8,7 @@ interface ChatBubbleProps {
   isUser: boolean;
   timestamp?: Date;
   isLoading?: boolean;
+  isStreaming?: boolean;  // 正在流式输出中（显示闪烁光标）
 }
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({
@@ -15,6 +16,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   isUser,
   timestamp,
   isLoading = false,
+  isStreaming = false,
 }) => {
   return (
     <div className={clsx('flex gap-3', isUser ? 'flex-row-reverse' : 'flex-row')}>
@@ -55,7 +57,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
             // 用户消息：纯文本
             <p className="whitespace-pre-wrap text-sm leading-relaxed">{message}</p>
           ) : (
-            // AI 消息：渲染 markdown
+            // AI 消息：渲染 markdown + 流式光标
             <div className="prose prose-sm max-w-none text-gray-900
               prose-headings:text-gray-900 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1
               prose-p:my-1 prose-p:leading-relaxed
@@ -65,7 +67,17 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
               prose-hr:my-2 prose-hr:border-gray-300
               prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:pl-3 prose-blockquote:text-gray-600
             ">
-              <ReactMarkdown>{message}</ReactMarkdown>
+              {message ? (
+                <>
+                  <ReactMarkdown>{message}</ReactMarkdown>
+                  {isStreaming && (
+                    <span className="inline-block w-0.5 h-4 bg-gray-600 ml-0.5 animate-pulse align-middle" />
+                  )}
+                </>
+              ) : isStreaming ? (
+                // 空内容 + 流式中：只显示光标
+                <span className="inline-block w-0.5 h-4 bg-gray-600 animate-pulse" />
+              ) : null}
             </div>
           )}
         </div>

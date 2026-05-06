@@ -46,27 +46,27 @@
   - [x] 6.2 扩展 api/routes.py 的 /api/agent/chat 接口，新增 session_id 参数，返回值中包含 session_id
   - [x] 6.3 端到端测试：发送中文消息，验证完整链路（NLU → Function Calling → LLM 回复）正常工作
 
-- [ ] 7. 多轮对话验证
-  - [ ] 7.1 测试同一 session 多轮对话：先说"推荐科幻电影"，再说"换几部"，验证上下文连贯
-  - [ ] 7.2 测试 session 过期：30 分钟后发送消息，验证自动创建新 session
+- [x] 7. 多轮对话验证
+  - [x] 7.1 测试同一 session 多轮对话：先说"推荐科幻电影"，再说"换几部"，验证上下文连贯
+  - [x] 7.2 测试 session 过期：30 分钟后发送消息，验证自动创建新 session
 
-- [ ] 8. RAG 语义向量检索
-  - [ ] 8.1 在 PostgreSQL 中安装 pgvector 扩展（CREATE EXTENSION vector）
+- [-] 8. RAG 语义向量检索
+  - [-] 8.1 在 PostgreSQL 中安装 pgvector 扩展（CREATE EXTENSION vector）
   - [ ] 8.2 为 content_items 表添加 embedding 向量列（ALTER TABLE ADD COLUMN embedding vector(1536)）
-  - [ ] 8.3 重写 rag/embedding.py，改为调用 DeepSeek/OpenAI Embedding API
-  - [ ] 8.4 重写 rag/rag_engine.py，实现 semantic_search()、index_content()、batch_index()
+  - [x] 8.3 重写 rag/embedding.py，改为调用 DeepSeek/OpenAI Embedding API
+  - [x] 8.4 重写 rag/rag_engine.py，实现 semantic_search()、index_content()、batch_index()
   - [ ] 8.5 编写批量向量化脚本，为已有 1233 条影视数据生成 embedding
   - [ ] 8.6 将 ToolOrchestrator 中的 _tool_semantic_search() 和 _tool_get_similar_content() 切换为真实 pgvector 检索
   - [ ] 8.7 测试语义检索：验证"温暖治愈的电影"能返回相关结果
 
-- [ ] 9. 推荐可解释性
-  - [ ] 9.1 重写 explain/explanation_generator.py，用 LLM 生成个性化推荐理由
-  - [ ] 9.2 在 AgentManager 主流程中接入 ExplanationGenerator，为每条推荐结果添加 explanation 字段
-  - [ ] 9.3 更新前端 RecommendationCard 组件，展示 explanation 字段内容
-  - [ ] 9.4 实现降级策略：LLM 失败时使用模板字符串
+- [x] 9. 推荐可解释性
+  - [x] 9.1 重写 explain/explanation_generator.py，用 LLM 生成个性化推荐理由
+  - [x] 9.2 在 AgentManager 主流程中接入 ExplanationGenerator，为每条推荐结果添加 explanation 字段
+  - [x] 9.3 更新前端 RecommendationCard 组件，展示 explanation 字段内容
+  - [x] 9.4 实现降级策略：LLM 失败时使用模板字符串
 
-- [ ] 10. 流式输出（SSE）
-  - [ ] 10.1 扩展 /api/agent/chat 接口，支持 stream=true 参数，返回 text/event-stream
-  - [ ] 10.2 实现 SSE 事件格式：逐 token 推送，结束时发送 [DONE]
-  - [ ] 10.3 更新前端 agentApi.chat() 和 ChatBubble 组件，支持 SSE 流式接收和逐字显示
-  - [ ] 10.4 测试流式输出：验证前端逐字显示效果正常
+- [x] 10. 流式输出（SSE）
+  - [x] 10.1 扩展 /api/agent/chat 接口，支持 stream=true 参数，返回 text/event-stream
+  - [x] 10.2 实现 SSE 事件格式：逐 token 推送，结束时发送 [DONE]
+  - [x] 10.3 更新前端 agentApi.chat() 和 ChatBubble 组件，支持 SSE 流式接收和逐字显示
+  - [x] 10.4 测试流式输出：验证前端逐字显示效果正常
