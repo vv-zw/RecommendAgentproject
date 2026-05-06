@@ -1,7 +1,7 @@
 import React from 'react';
-import { Star, Calendar, Tag, ExternalLink } from 'lucide-react';
+import { Star, Calendar, Tag } from 'lucide-react';
 import { MediaItem } from '../../api/content';
-import Button from '../common/Button';
+import { useNavigate } from 'react-router-dom';
 
 interface RecommendationCardProps {
   item: MediaItem;
@@ -9,106 +9,88 @@ interface RecommendationCardProps {
   rank?: number;
 }
 
-const RecommendationCard: React.FC<RecommendationCardProps> = ({
-  item,
-  reason,
-  rank,
-}) => {
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '未知';
-    const date = new Date(dateString);
-    return date.getFullYear();
+const RecommendationCard: React.FC<RecommendationCardProps> = ({ item, reason, rank }) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    const path = item.media_type === 'movie' ? `/movie/${item.id}` : `/series/${item.id}`;
+    navigate(path);
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300">
-      {/* 排名徽章 */}
+    <div
+      onClick={handleClick}
+      className="flex gap-3 p-3 rounded-xl border border-gray-100 hover:border-primary-200 hover:bg-primary-50/30 cursor-pointer transition-all duration-200 group"
+    >
+      {/* 排名 */}
       {rank !== undefined && (
-        <div className="absolute top-3 left-3 z-10">
-          <div className="bg-primary-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">
-            {rank}
-          </div>
+        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center mt-0.5">
+          {rank}
         </div>
       )}
 
-      <div className="md:flex">
-        {/* 海报 */}
-        <div className="md:w-1/3">
-          <div className="relative h-48 md:h-full">
-            <img
-              src={item.poster_path || '/placeholder-poster.jpg'}
-              alt={item.title}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            
-            {/* 评分 */}
-            <div className="absolute bottom-3 right-3 bg-black/70 text-white px-2 py-1 rounded-full flex items-center gap-1">
-              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm font-semibold">{item.vote_average.toFixed(1)}</span>
-            </div>
+      {/* 海报 */}
+      <div className="flex-shrink-0 w-14 h-20 rounded-lg overflow-hidden bg-gray-100">
+        {item.poster_path ? (
+          <img
+            src={item.poster_path}
+            alt={item.title}
+            className="w-full h-full object-cover"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs text-center px-1">
+            暂无封面
           </div>
+        )}
+      </div>
+
+      {/* 信息 */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-1 mb-1">
+          <h4 className="text-sm font-semibold text-gray-900 line-clamp-1 group-hover:text-primary-700 transition-colors">
+            {item.title}
+          </h4>
+          <span className="flex-shrink-0 text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+            {item.media_type === 'movie' ? '电影' : '剧集'}
+          </span>
         </div>
 
-        {/* 内容 */}
-        <div className="md:w-2/3 p-4">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-xl font-bold text-gray-900">{item.title}</h3>
-            <span className="text-sm text-gray-500">
-              {item.media_type === 'movie' ? '电影' : '剧集'}
+        {/* 评分 + 年份 */}
+        <div className="flex items-center gap-3 text-xs text-gray-500 mb-1.5">
+          {item.vote_average > 0 && (
+            <span className="flex items-center gap-0.5 text-amber-600 font-medium">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              {item.vote_average.toFixed(1)}
             </span>
-          </div>
-
-          {/* 元信息 */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              <span>{formatDate(item.release_date)}</span>
-            </div>
-            
-            <div className="flex items-center gap-1">
-              <Tag className="w-4 h-4" />
-              <span>{item.genres?.join(' · ') || '未知'}</span>
-            </div>
-          </div>
-
-          {/* 简介 */}
-          <p className="text-gray-700 mb-4 line-clamp-3">
-            {item.overview || '暂无简介'}
-          </p>
-
-          {/* 推荐理由 */}
-          {reason && (
-            <div className="mb-4">
-              <div className="text-sm font-semibold text-gray-900 mb-1">推荐理由：</div>
-              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                {reason}
-              </p>
-            </div>
           )}
-
-          {/* 操作按钮 */}
-          <div className="flex gap-2">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => window.open(`/${item.media_type}/${item.id}`, '_blank')}
-            >
-              查看详情
-              <ExternalLink className="w-3 h-3 ml-1" />
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                // 这里可以添加添加到待看清单的逻辑
-              }}
-            >
-              加入待看
-            </Button>
-          </div>
+          {item.release_date && (
+            <span className="flex items-center gap-0.5">
+              <Calendar className="w-3 h-3" />
+              {item.release_date}
+            </span>
+          )}
+          {item.genres && item.genres.length > 0 && (
+            <span className="flex items-center gap-0.5 truncate">
+              <Tag className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{item.genres.slice(0, 2).join(' · ')}</span>
+            </span>
+          )}
         </div>
+
+        {/* 简介 */}
+        {item.overview && (
+          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+            {item.overview}
+          </p>
+        )}
+
+        {/* 推荐理由 */}
+        {reason && (
+          <p className="text-xs text-primary-600 mt-1 line-clamp-1">
+            💡 {reason}
+          </p>
+        )}
       </div>
     </div>
   );

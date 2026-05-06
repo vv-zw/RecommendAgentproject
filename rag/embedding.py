@@ -1,103 +1,56 @@
 # rag/embedding.py
-import math
-from collections import Counter
-from typing import List, Dict, Iterable
+"""
+Embedding 模块：调用外部 Embedding API 将文本转换为向量。
+替换原有的自制 TF-IDF 实现。
+"""
+import logging
+import os
+from typing import Optional
 
-class TfidfVectorizer:
+logger = logging.getLogger(__name__)
+
+# 向量维度（与所选模型一致）
+# DeepSeek text-embedding-v2: 1024 维
+# OpenAI text-embedding-3-small: 1536 维
+# OpenAI text-embedding-3-large: 3072 维
+EMBEDDING_DIM = int(os.environ.get("EMBEDDING_DIM", "1536"))
+
+
+def get_text_embedding(text: str) -> Optional[list]:
     """
-    A from-scratch implementation of TF-IDF vectorization.
-    It does not rely on any external libraries like scikit-learn.
+    将文本转换为向量。
+
+    Args:
+        text: 待向量化的文本
+
+    Returns:
+        float 列表（向量），失败时返回 None
     """
-    def __init__(self):
-        self._idf: Dict[str, float] = {}
-        self._vocabulary: set = set()
-        self._doc_count: int = 0
+    if not text or not text.strip():
+        return None
 
-    def _tokenize(self, text: str) -> List[str]:
-        """A very simple tokenizer that splits by space and lowercases."""
-        return text.lower().split()
+    try:
+        from ai_config.llm_client import get_embedding
+        return get_embedding(text.strip())
+    except Exception as e:
+        logger.error(f"Embedding API 调用失败：{e}")
+        return None
 
-    def fit(self, corpus: Iterable[str]):
-        """
-        Learns the vocabulary and IDF scores from a corpus of documents.
-        :param corpus: An iterable of documents (strings).
-        """
-        self._doc_count = 0
-        doc_freqs = Counter()
-        
-        # First pass: count document frequencies and build vocabulary
-        for doc in corpus:
-            self._doc_count += 1
-            tokens = self._tokenize(doc)
-            self._vocabulary.update(tokens)
-            # Use a set to count each term only once per document
-            doc_freqs.update(set(tokens))
 
-        # Calculate IDF for each term in the vocabulary
-        for term in self._vocabulary:
-            # Classic IDF formula: log(N / (df + 1)) to avoid division by zero
-            self._idf[term] = math.log(self._doc_count / (doc_freqs[term] + 1))
-
-    def transform(self, documents: Iterable[str]) -> List[Dict[str, float]]:
-        """
-        Transforms documents into their TF-IDF vector representation.
-        :param documents: An iterable of documents (strings).
-        :return: A list of TF-IDF vectors (dictionaries).
-        """
-        tfidf_vectors = []
-        for doc in documents:
-            tokens = self._tokenize(doc)
-            term_counts = Counter(tokens)
-            total_terms = len(tokens)
-            
-            tfidf_vector = {}
-            if total_terms > 0:
-                for term, count in term_counts.items():
-                    if term in self._vocabulary:
-                        # TF = (term frequency in doc) / (total terms in doc)
-                        tf = count / total_terms
-                        # TF-IDF = TF * IDF
-                        tfidf_vector[term] = tf * self._idf[term]
-            
-            tfidf_vectors.append(tfidf_vector)
-            
-        return tfidf_vectors
-
-    def fit_transform(self, corpus: Iterable[str]) -> List[Dict[str, float]]:
-        """
-        A convenience method to both fit the model and transform the corpus.
-        :param corpus: An iterable of documents (strings).
-        :return: A list of TF-IDF vectors for the corpus.
-        """
-        self.fit(corpus)
-        return self.transform(corpus)
-
-if __name__ == '__main__':
-    print("--- Testing embedding.py ---")
-    
-    # Sample corpus
-    corpus = [
-        "this is the first document",
-        "this document is the second document",
-        "and this is the third one",
-        "is this the first document"
-    ]
-
-    vectorizer = TfidfVectorizer()
-    
-    # Test fit_transform
-    tfidf_matrix = vectorizer.fit_transform(corpus)
-    
-    print("Vocabulary:", sorted(list(vectorizer._vocabulary)))
-    print("\nTF-IDF Matrix:")
-    for i, vec in enumerate(tfidf_matrix):
-        # Print sorted by term for consistent output
-        sorted_vec = {k: f"{v:.4f}" for k, v in sorted(vec.items())}
-        print(f"  Doc {i+1}: {sorted_vec}")
-
-    # Test transform on a new document
-    new_doc = ["this is a new document"]
-    new_vec = vectorizer.transform(new_doc)
-    print("\nTF-IDF for new doc:")
-    sorted_new_vec = {k: f"{v:.4f}" for k, v in sorted(new_vec[0].items())}
-    print(f"  New Doc: {sorted_new_vec}")
+def build_content_text(title: str, plot: str = "", genres: str = "") -> str:
+    """
+    将影视的多个字段拼接为用于向量化的文本。
+    格式：标题。类型。剧情简介。
+    """
+    parts = []
+    if title:
+        parts.append(title.strip())
+    if genres:
+        # genres 格式为 "科幻/动作/冒险"，转为自然语言
+        genre_list = [g.strip() for g in genres.split("/") if g.strip()]
+        if genre_list:
+            parts.append("类型：" + "、".join(genre_list))
+    if plot:
+        # 简介截断，避免 token 过多
+        parts.append(plot.strip()[:300])
+    return "。".join(parts)

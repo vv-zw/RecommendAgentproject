@@ -11,6 +11,7 @@ from agent.agent_core.nlu_processor import NLUProcessor
 from agent.agent_core.tool_orchestrator import ToolOrchestrator
 from agent.agent_core.response_generator import ResponseGenerator
 from agent.session_manager import session_manager
+from explain.explanation_generator import explanation_generator
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,15 @@ class AgentManager:
             preference_context=preference_context,
             stream=stream,
         )
+
+        # 6.5 ExplanationGenerator：为每条推荐结果添加个性化理由
+        if structured_results and not stream:
+            try:
+                structured_results = explanation_generator.generate_explanations(
+                    structured_results, preference_context
+                )
+            except Exception as e:
+                logger.warning(f"推荐理由生成失败，跳过：{e}")
 
         # 7. 更新 session 历史
         session_manager.append(session_id, "user", user_message)

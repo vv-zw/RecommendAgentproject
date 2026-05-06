@@ -1,6 +1,7 @@
 import React from 'react';
 import { clsx } from 'clsx';
 import { User, Bot } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatBubbleProps {
   message: string;
@@ -16,65 +17,64 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   isLoading = false,
 }) => {
   return (
-    <div
-      className={clsx(
-        'flex gap-3 mb-4',
-        isUser ? 'flex-row-reverse' : 'flex-row'
-      )}
-    >
+    <div className={clsx('flex gap-3', isUser ? 'flex-row-reverse' : 'flex-row')}>
       {/* 头像 */}
       <div
         className={clsx(
-          'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
-          isUser
-            ? 'bg-primary-600 text-white'
-            : 'bg-gray-200 text-gray-700'
+          'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1',
+          isUser ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'
         )}
       >
-        {isUser ? (
-          <User className="w-4 h-4" />
-        ) : (
-          <Bot className="w-4 h-4" />
-        )}
+        {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
       </div>
 
       {/* 消息气泡 */}
-      <div className="flex-1">
+      <div className={clsx('flex flex-col max-w-[80%]', isUser ? 'items-end' : 'items-start')}>
         <div
           className={clsx(
-            'rounded-2xl px-4 py-3 max-w-[80%]',
+            'rounded-2xl px-4 py-3',
             isUser
-              ? 'bg-primary-100 text-primary-900 rounded-tr-none ml-auto'
+              ? 'bg-primary-600 text-white rounded-tr-none'
               : 'bg-gray-100 text-gray-900 rounded-tl-none'
           )}
         >
           {isLoading ? (
-            <div className="flex items-center gap-2">
-              <div className="animate-pulse flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-              </div>
-              <span className="text-gray-500">思考中...</span>
+            <div className="flex items-center gap-2 py-1">
+              <span className="flex gap-1">
+                {[0, 1, 2].map(i => (
+                  <span
+                    key={i}
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: `${i * 0.15}s` }}
+                  />
+                ))}
+              </span>
+              <span className="text-gray-500 text-sm">思考中...</span>
             </div>
+          ) : isUser ? (
+            // 用户消息：纯文本
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">{message}</p>
           ) : (
-            <div className="whitespace-pre-wrap">{message}</div>
+            // AI 消息：渲染 markdown
+            <div className="prose prose-sm max-w-none text-gray-900
+              prose-headings:text-gray-900 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1
+              prose-p:my-1 prose-p:leading-relaxed
+              prose-strong:text-gray-900 prose-strong:font-semibold
+              prose-ul:my-1 prose-ul:pl-4 prose-li:my-0.5
+              prose-ol:my-1 prose-ol:pl-4
+              prose-hr:my-2 prose-hr:border-gray-300
+              prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:pl-3 prose-blockquote:text-gray-600
+            ">
+              <ReactMarkdown>{message}</ReactMarkdown>
+            </div>
           )}
         </div>
 
         {/* 时间戳 */}
-        {timestamp && (
-          <div
-            className={clsx(
-              'text-xs text-gray-500 mt-1',
-              isUser ? 'text-right' : 'text-left'
-            )}
-          >
-            {timestamp.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </div>
+        {timestamp && !isLoading && (
+          <span className="text-xs text-gray-400 mt-1 px-1">
+            {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
         )}
       </div>
     </div>

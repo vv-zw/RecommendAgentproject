@@ -20,6 +20,7 @@ export interface MediaItem {
   language?: string;
   duration?: string;
   added_at?: string;
+  explanation?: string;  // 推荐理由（由 ExplanationGenerator 生成）
 }
 
 export interface MediaListResponse {

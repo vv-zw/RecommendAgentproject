@@ -1,35 +1,24 @@
 import api from './index';
 import { MediaItem } from './content';
 
-export interface AgentChatRequest {
-  message: string;
-}
-
 export interface AgentChatResponse {
   nl_response: string;
   structured_results: MediaItem[];
-}
-
-export interface RecommendationResult {
-  answer: string;
-  results: MediaItem[];
+  session_id: string;
 }
 
 export const agentApi = {
-  // AI Agent聊天推荐
-  chat: async (message: string) => {
-    const userId = localStorage.getItem('user_id');
-    if (!userId) {
-      throw new Error('User not authenticated');
-    }
-
+  /**
+   * 发送消息给 AI Agent，支持多轮对话（传入 session_id）
+   */
+  chat: async (message: string, sessionId?: string): Promise<AgentChatResponse> => {
     const response = await api.post<AgentChatResponse>('/agent/chat', {
       message,
+      session_id: sessionId ?? null,
     });
     return response.data;
   },
 
-  // 健康检查
   healthCheck: async () => {
     const response = await api.get<{ status: string; timestamp: string }>('/health');
     return response.data;

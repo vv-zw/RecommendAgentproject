@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { Send, Sparkles } from 'lucide-react';
-import Button from '../common/Button';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -16,89 +15,64 @@ const ChatInput: React.FC<ChatInputProps> = ({
   isLoading = false,
 }) => {
   const [message, setMessage] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 自动调整输入框高度
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
+  }, [message]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim() && !disabled && !isLoading) {
-      onSendMessage(message.trim());
+    const trimmed = message.trim();
+    if (trimmed && !disabled && !isLoading) {
+      onSendMessage(trimmed);
       setMessage('');
+      // 重置高度
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
   };
 
-  const examplePrompts = [
-    '推荐类似流浪地球的电影',
-    '最近有什么高分科幻片',
-    '我想看轻松一点的剧',
-    '推荐适合家庭观看的电影',
-    '有什么悬疑惊悚剧推荐',
-  ];
+  const canSend = message.trim().length > 0 && !disabled && !isLoading;
 
   return (
-    <div className="space-y-4">
-      {/* 示例提示 */}
-      <div className="flex flex-wrap gap-2">
-        {examplePrompts.map((prompt, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => {
-              setMessage(prompt);
-              setTimeout(() => {
-                const textarea = document.querySelector('textarea');
-                if (textarea) {
-                  textarea.focus();
-                }
-              }, 0);
-            }}
-            className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
-            disabled={disabled || isLoading}
-          >
-            {prompt}
-          </button>
-        ))}
-      </div>
-
-      {/* 输入框 */}
-      <form onSubmit={handleSubmit} className="relative">
-        <div className="relative">
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={disabled || isLoading}
-            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-            rows={3}
-          />
-          
-          <div className="absolute right-2 bottom-2">
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={!message.trim() || disabled || isLoading}
-              isLoading={isLoading}
-              className="rounded-full"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* AI助手提示 */}
-        <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
-          <Sparkles className="w-4 h-4" />
-          <span>AI助手会根据您的描述智能推荐影视内容</span>
-        </div>
-      </form>
-    </div>
+    <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
+      <textarea
+        ref={textareaRef}
+        value={message}
+        onChange={e => setMessage(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={disabled || isLoading}
+        rows={1}
+        className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none disabled:bg-gray-50 disabled:cursor-not-allowed text-sm leading-relaxed overflow-hidden"
+        style={{ minHeight: '44px', maxHeight: '120px' }}
+      />
+      <button
+        type="submit"
+        disabled={!canSend}
+        className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        aria-label="发送"
+      >
+        {isLoading ? (
+          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <Send className="w-4 h-4" />
+        )}
+      </button>
+    </form>
   );
 };
 

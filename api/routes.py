@@ -615,7 +615,8 @@ def get_user_preferences(current_user, user_id):
 def chat(current_user):
     data       = request.get_json() or {}
     message    = (data.get('message') or '').strip()
-    session_id = data.get('session_id')  # 多轮对话 session ID，None 时自动创建
+    session_id = data.get('session_id')       # 多轮对话 session ID，None 时自动创建
+    use_stream = data.get('stream', False)    # 是否启用 SSE 流式输出
     if not message:
         return jsonify({"error": "Message is required"}), 400
 
@@ -636,19 +637,56 @@ def chat(current_user):
 
     try:
         from agent.recommendation_agent import AgentManager
+        from flask import Response, stream_with_context
+        import json as _json
+
         agent = AgentManager()
-        nl_response, structured_results, out_session_id = agent.process_user_request(
-            user_id=current_user['id'],
-            user_message=message,
-            preference_context=preference_context,
-            session_id=session_id,
-            stream=False,
-        )
-        return jsonify({
-            "nl_response": nl_response,
-            "structured_results": structured_results,
-            "session_id": out_session_id,
-        })
+
+        if use_stream:
+            # ── SSE 流式输出 ──────────────────────────────────────
+            nl_gen, structured_results, out_session_id = agent.process_user_request(
+                user_id=current_user['id'],
+                user_message=message,
+                preference_context=preference_context,
+                session_id=session_id,
+                stream=True,
+            )
+
+            def generate():
+                # 先推送 session_id 和结构化结果
+                yield f"data: {_json.dumps({'type': 'meta', 'session_id': out_session_id, 'structured_results': structured_results}, ensure_ascii=False)}\n\n"
+                # 逐 token 推送文本
+                try:
+                    for token in nl_gen:
+                        yield f"data: {_json.dumps({'type': 'token', 'content': token}, ensure_ascii=False)}\n\n"
+                except Exception as e:
+                    yield f"data: {_json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+                # 结束标记
+                yield "data: [DONE]\n\n"
+
+            return Response(
+                stream_with_context(generate()),
+                mimetype="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "X-Accel-Buffering": "no",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
+        else:
+            # ── 普通 JSON 响应 ────────────────────────────────────
+            nl_response, structured_results, out_session_id = agent.process_user_request(
+                user_id=current_user['id'],
+                user_message=message,
+                preference_context=preference_context,
+                session_id=session_id,
+                stream=False,
+            )
+            return jsonify({
+                "nl_response": nl_response,
+                "structured_results": structured_results,
+                "session_id": out_session_id,
+            })
     except Exception as e:
         print(f"Agent error: {e}")
         return jsonify({"error": "Agent execution failed", "detail": str(e)}), 500

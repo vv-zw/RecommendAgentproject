@@ -51,8 +51,8 @@ class SessionManager:
             logger.debug(f"复用 session: {session_id}，历史消息数: {len(session['history'])}")
             return session_id, session["history"]
 
-        # 创建新 session
-        new_id = session_id or str(uuid.uuid4())
+        # session_id 不存在（首次创建或已过期），生成新 ID
+        new_id = str(uuid.uuid4())
         _sessions[new_id] = {
             "history": [],
             "last_active": datetime.now(),
