@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Sparkles, RefreshCw, Trash2 } from 'lucide-react';
 import ChatBubble from '../components/agent/ChatBubble';
 import ChatInput from '../components/agent/ChatInput';
@@ -6,7 +6,7 @@ import RecommendationCard from '../components/agent/RecommendationCard';
 import { agentApi } from '../api/agent';
 import { contentApi, UserPreference, MediaItem } from '../api/content';
 import { useAuthStore } from '../store/authStore';
-// 默认快捷词条（未登录或偏好加载失败时使用）
+
 const DEFAULT_QUICK_PROMPTS = [
   '推荐类似流浪地球的电影',
   '最近有什么高分科幻片',
@@ -34,7 +34,6 @@ function generateQuickPrompts(preferences: UserPreference[]): string[] {
   const fallbacks = ['最近有什么高分电影', '推荐经典动作片', '有什么好看的悬疑剧', '推荐温暖治愈的剧集'];
   let i = 0;
   while (prompts.length < 4 && i < fallbacks.length) prompts.push(fallbacks[i++]);
-
   return prompts;
 }
 
@@ -61,12 +60,11 @@ const AgentAssistant: React.FC = () => {
   const [quickPrompts, setQuickPrompts] = useState<string[]>(DEFAULT_QUICK_PROMPTS);
   const [promptsLoading, setPromptsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const streamControllerRef = useRef<AbortController | null>(null);
   const [streamingMsgId, setStreamingMsgId] = useState<string | null>(null);
 
-  // 加载用户偏好，生成个性化快捷词条
+  const streamControllerRef = useRef<AbortController | null>(null);
+
+  // 加载用户偏好
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setQuickPrompts(DEFAULT_QUICK_PROMPTS);
@@ -85,45 +83,25 @@ const AgentAssistant: React.FC = () => {
       .finally(() => setPromptsLoading(false));
   }, [isAuthenticated, user]);
 
-  // 新消息时滚动到底部
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
-
-  const handleSendMessage = async (message: string) => {
-    // 取消上一次未完成的流
+  const handleSendMessage = (message: string) => {
     if (streamControllerRef.current) {
       streamControllerRef.current.abort();
     }
 
-    const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
-      content: message,
-      isUser: true,
-      timestamp: new Date(),
-    };
     const thinkingId = `t-${Date.now()}`;
     const aiMsgId = `a-${Date.now()}`;
 
-    setMessages(prev => [...prev, userMsg, {
-      id: thinkingId,
-      content: '',
-      isUser: false,
-      timestamp: new Date(),
-      isLoading: true,
-    }]);
+    setMessages(prev => [
+      ...prev,
+      { id: `u-${Date.now()}`, content: message, isUser: true, timestamp: new Date() },
+      { id: thinkingId, content: '', isUser: false, timestamp: new Date(), isLoading: true },
+    ]);
     setIsLoading(true);
 
-    // 用 SSE 流式模式
     const controller = agentApi.chatStream(
       message,
       {
         onMeta: (newSessionId, results) => {
-          // 收到 meta 帧：保存 session_id，更新推荐结果，把 loading 气泡换成空的 AI 气泡
           if (newSessionId) setSessionId(newSessionId);
           if (results?.length > 0) setRecommendations(results);
           setMessages(prev => [
@@ -133,7 +111,6 @@ const AgentAssistant: React.FC = () => {
           setStreamingMsgId(aiMsgId);
         },
         onToken: (token) => {
-          // 逐字追加到 AI 气泡
           setMessages(prev => prev.map(m =>
             m.id === aiMsgId ? { ...m, content: m.content + token } : m
           ));
@@ -207,11 +184,8 @@ const AgentAssistant: React.FC = () => {
         {/* 左侧：聊天区域 */}
         <div className="flex flex-col flex-1 min-w-0 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
-          {/* 消息列表 — 可滚动区域 */}
-          <div
-            ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scroll-smooth"
-          >
+          {/* 消息列表 — 用户自己控制滚动，不自动滚动 */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
             {messages.map(msg => (
               <ChatBubble
                 key={msg.id}
@@ -222,12 +196,10 @@ const AgentAssistant: React.FC = () => {
                 isStreaming={msg.id === streamingMsgId}
               />
             ))}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* 底部输入区域 */}
           <div className="flex-shrink-0 border-t border-gray-100 px-4 pt-3 pb-4 space-y-3">
-            {/* 快捷词条 */}
             <div>
               <div className="flex items-center gap-1.5 mb-2">
                 <Sparkles className="w-3.5 h-3.5 text-primary-500" />
@@ -253,7 +225,6 @@ const AgentAssistant: React.FC = () => {
               </div>
             </div>
 
-            {/* 输入框 */}
             <ChatInput
               onSendMessage={handleSendMessage}
               disabled={isLoading}
