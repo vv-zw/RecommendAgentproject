@@ -94,6 +94,10 @@ class ResponseGenerator:
         provider = os.environ.get("LLM_PROVIDER", "deepseek")
         model = os.environ.get("LLM_MODEL", "deepseek-chat")
 
+        # 提前检查 API Key 是否有效，避免在 generator 中才暴露异常
+        if not api_key or api_key == "your_api_key_here":
+            raise Exception("DEEPSEEK_API_KEY 未配置或无效")
+
         if provider == "deepseek":
             url = "https://api.deepseek.com/chat/completions"
         else:
@@ -131,7 +135,8 @@ class ResponseGenerator:
                             continue
         except Exception as e:
             logger.error(f"requests 流式调用失败：{e}")
-            yield self._fallback_response([], None)
+            # 重新抛出异常，让上层捕获并降级
+            raise
 
     def _build_results_summary(self, tool_results: list) -> str:
         """将推荐结果列表转换为简洁的 JSON 摘要（只保留关键字段）。"""

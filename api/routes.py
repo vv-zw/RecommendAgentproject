@@ -9,6 +9,51 @@ import psycopg
 import psycopg.rows
 from movie_recommendation.config import Config
 
+
+# ── 辅助函数：构建降级模板回复 ─────────────────────────────────────
+def _build_fallback_response(structured_results: list, preference_context: dict = None) -> str:
+    """当 LLM 流式生成失败时，使用模板构建回复。"""
+    if not structured_results:
+        return "抱歉，暂时没有找到符合条件的推荐内容，请尝试换个描述方式。"
+
+    lines = []
+    # 偏好描述
+    pref_parts = []
+    if preference_context:
+        genres = preference_context.get("genres") or []
+        if genres:
+            pref_parts.append("、".join(genres[:3]))
+    if pref_parts:
+        lines.append(f"根据您对{pref_parts[0]}等类型的偏好，为您推荐：")
+    else:
+        lines.append("为您推荐以下影视：")
+
+    for item in structured_results[:6]:
+        title = item.get("title", "未知")
+        genres = "/".join(item.get("genres", [])[:3])
+        rating = item.get("vote_average", 0)
+        director = item.get("director", "")
+        overview = (item.get("overview") or "")[:60]
+
+        detail_parts = []
+        if genres:
+            detail_parts.append(genres)
+        if rating:
+            detail_parts.append(f"评分 {rating}")
+        if director:
+            detail_parts.append(f"{director} 导演")
+
+        detail_str = " | ".join(detail_parts) if detail_parts else ""
+        line = f"- 《{title}》"
+        if detail_str:
+            line += f"（{detail_str}）"
+        if overview:
+            line += f"\n  {overview}..."
+        lines.append(line)
+
+    lines.append("\n以上推荐由系统算法生成，如需更精准的推荐，请稍后再试。")
+    return "\n".join(lines)
+
 # ── 数据库连接 ────────────────────────────────────────────────────
 def get_conn():
     url = Config.get_database_url()
@@ -636,11 +681,11 @@ def chat(current_user):
         print(f"Failed to load preference context: {e}")
 
     try:
-        from agent.recommendation_agent import AgentManager
+        from agent.orchestrator import AgentOrchestrator
         from flask import Response, stream_with_context
         import json as _json
 
-        agent = AgentManager()
+        agent = AgentOrchestrator()
 
         if use_stream:
             # ── SSE 流式输出 ──────────────────────────────────────
@@ -660,7 +705,12 @@ def chat(current_user):
                     for token in nl_gen:
                         yield f"data: {_json.dumps({'type': 'token', 'content': token}, ensure_ascii=False)}\n\n"
                 except Exception as e:
-                    yield f"data: {_json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+                    # 流式生成失败时，使用模板兜底
+                    print(f"【降级】流式生成失败，使用模板兜底: {e}")
+                    fallback_text = _build_fallback_response(structured_results, preference_context)
+                    # 逐字推送模板回复
+                    for char in fallback_text:
+                        yield f"data: {_json.dumps({'type': 'token', 'content': char}, ensure_ascii=False)}\n\n"
                 # 结束标记
                 yield "data: [DONE]\n\n"
 
