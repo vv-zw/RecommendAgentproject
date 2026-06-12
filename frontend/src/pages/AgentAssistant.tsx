@@ -155,14 +155,14 @@ const AgentAssistant: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] gap-4">
+    <div className="flex min-h-[calc(100vh-8rem)] flex-col gap-4 overflow-x-hidden lg:h-[calc(100vh-8rem)]">
       {/* 页头 */}
-      <div className="flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-primary-100 rounded-xl">
+      <div className="flex flex-shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex-shrink-0 p-2.5 bg-primary-100 rounded-xl">
             <Bot className="w-6 h-6 text-primary-600" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold text-gray-900">AI 助手</h1>
             <p className="text-sm text-gray-500">
               {isAuthenticated ? '基于您的偏好，智能推荐影视内容' : '智能影视推荐对话助手'}
@@ -171,7 +171,7 @@ const AgentAssistant: React.FC = () => {
         </div>
         <button
           onClick={handleClearChat}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          className="flex w-fit items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors sm:flex-shrink-0"
         >
           <Trash2 className="w-4 h-4" />
           清空对话
@@ -179,13 +179,13 @@ const AgentAssistant: React.FC = () => {
       </div>
 
       {/* 主体：聊天 + 推荐结果 */}
-      <div className="flex gap-4 flex-1 min-h-0">
+      <div className="flex flex-col gap-4 flex-1 min-h-0 lg:flex-row">
 
         {/* 左侧：聊天区域 */}
-        <div className="flex flex-col flex-1 min-w-0 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="flex flex-col flex-1 min-w-0 min-h-[560px] bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden lg:min-h-0">
 
           {/* 消息列表 — 用户自己控制滚动，不自动滚动 */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4 sm:px-4">
             {messages.map(msg => (
               <ChatBubble
                 key={msg.id}
@@ -199,7 +199,7 @@ const AgentAssistant: React.FC = () => {
           </div>
 
           {/* 底部输入区域 */}
-          <div className="flex-shrink-0 border-t border-gray-100 px-4 pt-3 pb-4 space-y-3">
+          <div className="flex-shrink-0 border-t border-gray-100 px-3 pt-3 pb-4 space-y-3 sm:px-4">
             <div>
               <div className="flex items-center gap-1.5 mb-2">
                 <Sparkles className="w-3.5 h-3.5 text-primary-500" />
@@ -217,7 +217,7 @@ const AgentAssistant: React.FC = () => {
                     type="button"
                     onClick={() => handleSendMessage(prompt)}
                     disabled={isLoading}
-                    className="px-3 py-1 text-xs bg-gray-50 hover:bg-primary-50 hover:text-primary-700 text-gray-600 border border-gray-200 hover:border-primary-200 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="max-w-full break-words px-3 py-1 text-left text-xs bg-gray-50 hover:bg-primary-50 hover:text-primary-700 text-gray-600 border border-gray-200 hover:border-primary-200 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {prompt}
                   </button>
@@ -234,7 +234,7 @@ const AgentAssistant: React.FC = () => {
         </div>
 
         {/* 右侧：推荐结果 */}
-        <div className="w-80 flex-shrink-0 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="w-full min-h-[360px] flex-shrink-0 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden lg:w-80 lg:min-h-0">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary-600" />
@@ -260,7 +260,7 @@ const AgentAssistant: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+              <div className="flex flex-col items-center justify-center h-full min-h-[280px] text-center px-6 py-12">
                 <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
                   <Sparkles className="w-6 h-6 text-gray-300" />
                 </div>
