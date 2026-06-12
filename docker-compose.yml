@@ -52,7 +52,6 @@ services:
       - PGDATABASE=${PGDATABASE:-movie_recommendation}
       - DATABASE_URL=postgresql://${PGUSER:-postgres}:${PGPASSWORD:-postgres123}@postgres:5432/${PGDATABASE:-movie_recommendation}
     ports:
-      - "5000:5000"
       - "5001:5001"
     volumes:
       # 数据目录映射（Windows 本地目录 -> 容器内目录）

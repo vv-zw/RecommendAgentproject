@@ -48,7 +48,7 @@ RUN mkdir -p \
 # 暴露端口
 # 5000: 主后端服务
 # 5001: Agent API 服务
-EXPOSE 5000 5001
+EXPOSE 5001
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
@@ -57,7 +57,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # 启动脚本：同时启动两个 Flask 服务
 # 主后端服务 (端口 5000)
 # Agent API 服务 (端口 5001)
-CMD ["sh", "-c", \
-    "gunicorn -w 4 -b 0.0.0.0:5000 movie_recommendation.app:app --access-logfile logs/gunicorn-5000.log --error-logfile logs/gunicorn-5000-error.log & \
-     gunicorn -w 2 -b 0.0.0.0:5001 api.app:app --access-logfile logs/gunicorn-5001.log --error-logfile logs/gunicorn-5001-error.log & \
-     wait"]
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5001", "api.app:app", "--access-logfile", "logs/gunicorn-5001.log", "--error-logfile", "logs/gunicorn-5001-error.log"]
