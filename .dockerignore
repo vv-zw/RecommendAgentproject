@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+venv312/
+movie_recommendation/venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 环境和日志
+.env
+.env.local
+.env.*.local
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# 测试
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+tests/
+
+# 临时文件
+*.tmp
+*.bak
+*.orig
+.cache/
+image_cache/
+movie_recommendation/image_cache/
+
+# 其他
+.kiro/
+.trae/
+docs/
+微信小程序/
+debug/
+README.md
+*.md
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# 数据文件（通过 volume 挂载）
+data/
+cache/

@@ -1,0 +1,53 @@
+FROM python:3.12-slim
+
+# 设置工作目录
+WORKDIR /app
+
+# 安装系统依赖（使用国内镜像源加速）
+# gcc: 编译 Python 包需要
+# libpq-dev: PostgreSQL 客户端库
+# curl: 健康检查用
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources \
+    && sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制依赖文件（利用 Docker 缓存层）
+COPY requirements.txt .
+
+# 安装 Python 依赖 + Gunicorn
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir gunicorn
+
+# 复制项目代码
+COPY . .
+
+# 创建必要的数据目录
+RUN mkdir -p \
+    data/datasets \
+    data/user \
+    data/recommendations \
+    cache/images \
+    logs \
+    movie_recommendation/image_cache
+
+# 暴露端口
+# 5000: 主后端服务
+# 5001: Agent API 服务
+EXPOSE 5000 5001
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:5001/health || exit 1
+
+# 启动脚本：同时启动两个 Flask 服务
+# 主后端服务 (端口 5000)
+# Agent API 服务 (端口 5001)
+CMD ["sh", "-c", \
+    "gunicorn -w 4 -b 0.0.0.0:5000 movie_recommendation.app:app --access-logfile logs/gunicorn-5000.log --error-logfile logs/gunicorn-5000-error.log & \
+     gunicorn -w 2 -b 0.0.0.0:5001 api.app:app --access-logfile logs/gunicorn-5001.log --error-logfile logs/gunicorn-5001-error.log & \
+     wait -n"]
